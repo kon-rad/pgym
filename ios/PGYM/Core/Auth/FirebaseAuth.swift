@@ -193,7 +193,8 @@ final class FirestoreUserRepository: UserRepository {
             reminderTime: (data["reminderTime"] as? String).flatMap(ReminderTime.init(string:)),
             units: (data["units"] as? String).flatMap(NewUserProfile.Units.init(rawValue:)),
             streakWeeks: (data["streakWeeks"] as? NSNumber)?.intValue,
-            proofCount: (data["proofCount"] as? NSNumber)?.intValue
+            proofCount: (data["proofCount"] as? NSNumber)?.intValue,
+            physiqueConsent: data["physiqueConsent"] as? Bool
         )
     }
 

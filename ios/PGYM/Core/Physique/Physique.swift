@@ -85,7 +85,7 @@ final class PhysiqueConsent {
     /// Changed on the phone, not yet in Firestore.
     private(set) var needsUpload = false
 
-    @ObservationIgnored private let defaults: UserDefaults
+    private let defaults: UserDefaults
     @ObservationIgnored private var writer: PhysiqueConsentWriting?
     @ObservationIgnored private var uid: String?
 
