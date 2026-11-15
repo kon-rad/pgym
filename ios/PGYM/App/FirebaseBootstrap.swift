@@ -6,6 +6,9 @@ import FirebaseCore
 import FirebaseFirestore
 import FirebaseFunctions
 #endif
+#if canImport(FirebaseAppCheck)
+import FirebaseAppCheck
+#endif
 
 /// Configures Firebase from a `GoogleService-Info.plist` that is NOT in git.
 ///
@@ -43,10 +46,20 @@ enum FirebaseBootstrap {
         guard let path = configPath(in: bundle) else { return .missingConfig }
         #if canImport(FirebaseCore)
         guard let options = FirebaseOptions(contentsOfFile: path) else { return .missingConfig }
+        let host = environment[emulatorHostKey].flatMap { $0.isEmpty ? nil : $0 }
         if FirebaseApp.app() == nil {
+            #if canImport(FirebaseAppCheck)
+            // App Check must be set before configure (card I7): App Attest on a device, the debug
+            // provider on the simulator and against the emulator.
+            #if targetEnvironment(simulator)
+            let debugAppCheck = true
+            #else
+            let debugAppCheck = host != nil
+            #endif
+            AppCheck.setAppCheckProviderFactory(PGYMAppCheckProviderFactory(useDebugProvider: debugAppCheck))
+            #endif
             FirebaseApp.configure(options: options)
         }
-        let host = environment[emulatorHostKey].flatMap { $0.isEmpty ? nil : $0 }
         if let host {
             Auth.auth().useEmulator(withHost: host, port: EmulatorPort.auth)
             let settings = Firestore.firestore().settings

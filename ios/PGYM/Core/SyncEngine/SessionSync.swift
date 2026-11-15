@@ -269,6 +269,8 @@ final class SessionSyncQueue {
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var again = false
     @ObservationIgnored private var statsPulled = false
+    /// Called after a flush that wrote everything: the stamp queue waits for a session's document.
+    @ObservationIgnored var onFlushed: @MainActor () -> Void = {}
 
     init(
         container: ModelContainer,
@@ -335,6 +337,7 @@ final class SessionSyncQueue {
                 _ = try await engine.flush(context: context, uid: uid)
                 lastAttemptFailed = false
                 failures = 0
+                onFlushed()
                 if !statsPulled {
                     statsPulled = (try? await engine.pullStats(context: context, uid: uid)) != nil
                 }

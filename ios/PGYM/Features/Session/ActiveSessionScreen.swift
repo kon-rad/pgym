@@ -11,7 +11,8 @@ struct ActiveSessionScreen: View {
     static let viewID = "D2"
 
     let session: WorkoutSession
-    /// Called after the proof card is saved and the session has ended (card I7 queues the upload).
+    /// Called when the proof card is saved, just before the session ends: shows D11 and queues the
+    /// upload and the stamp (card I7).
     var onFinishForProof: (WorkoutSession) -> Void = { _ in }
 
     @Environment(\.modelContext) private var context
@@ -609,8 +610,9 @@ struct ActiveSessionScreen: View {
     private func finishWithProof(at stampedAt: Date) {
         notifier.cancelRestEnd()
         takingProof = false
-        act { try store.finish(session, withProof: true, now: stampedAt) }
+        // D11 first, then end the session, so the cover hands over from D2 to D11 without closing.
         onFinishForProof(session)
+        act { try store.finish(session, withProof: true, now: stampedAt) }
     }
 
     // MARK: Rest timer and resume

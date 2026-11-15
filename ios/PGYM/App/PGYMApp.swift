@@ -10,6 +10,7 @@ struct PGYMApp: App {
     @State private var network: NetworkMonitor
     @State private var services: AppServices
     @State private var sessionSync: SessionSyncQueue
+    @State private var proofs: ProofServices
     private let dependencies: AuthDependencies
     private let notificationTaps = NotificationTapRouter()
     private let container: ModelContainer
@@ -35,16 +36,34 @@ struct PGYMApp: App {
             useFirestore: backend == .firebase,
             uid: { [session] in session.user?.uid }
         )
-        _sessionSync = State(initialValue: SessionSyncSetup.makeQueue(
+        let sessionSync = SessionSyncSetup.makeQueue(
             container: container,
             useFirestore: backend == .firebase,
             uid: { [session] in session.user?.uid },
             isOnline: { network.isOnline }
-        ))
+        )
+        _sessionSync = State(initialValue: sessionSync)
 
         // UI tests never touch iOS notifications or leave state behind.
         let services = isUITest ? AppServices.inMemory() : AppServices.live()
         _services = State(initialValue: services)
+
+        // Card I7: upload, stamp, consent, score and signed images.
+        let proofs = ProofServices.make(
+            container: container,
+            useFirebase: backend == .firebase,
+            isUITest: isUITest,
+            uid: { [session] in session.user?.uid },
+            isOnline: { network.isOnline },
+            sessionSync: sessionSync
+        )
+        proofs.connect(
+            sessionSync: sessionSync,
+            account: session,
+            reminders: services.reminders,
+            unit: { [session] in WeightUnit.preferred(profile: session.profile?.units) }
+        )
+        _proofs = State(initialValue: proofs)
         // Set before launch finishes, so a tap that cold-starts the app is delivered.
         if !isUITest {
             UNUserNotificationCenter.current().delegate = notificationTaps
@@ -61,6 +80,7 @@ struct PGYMApp: App {
                 .environment(network)
                 .environment(services)
                 .environment(sessionSync)
+                .environment(proofs)
                 .task {
                     for identifier in notificationTaps.drain() {
                         await services.reminders.notificationOpened(identifier)
@@ -70,15 +90,32 @@ struct PGYMApp: App {
                 .onOpenURL { url in _ = dependencies.handleOpenURL(url) }
                 // Routines and sessions saved while signed out or offline go up as soon as both change.
                 .onChange(of: session.user?.uid) { _, uid in
-                    if uid != nil {
+                    if let uid {
                         RoutineSyncCoordinator.shared.requestSync()
                         sessionSync.requestSync()
+                        proofs.consent.load(uid: uid, profileValue: session.profile?.physiqueConsent)
+                        proofs.queue.requestStamp()
+                    } else {
+                        proofs.consent.reset()
+                        proofs.images.removeAll()
+                        proofs.completedSessionID = nil
+                    }
+                }
+                .onChange(of: session.profile) { _, profile in
+                    // The profile arrives after sign-in: take the server's consent flag.
+                    if let uid = session.user?.uid {
+                        proofs.consent.load(uid: uid, profileValue: profile?.physiqueConsent)
                     }
                 }
                 .onChange(of: network.isOnline) { _, online in
                     if online {
                         RoutineSyncCoordinator.shared.requestSync()
                         sessionSync.requestSync()
+                        // Offline finishes stamp on reconnect, with the server's time.
+                        Task {
+                            await proofs.consent.flush()
+                            proofs.queue.requestStamp()
+                        }
                     }
                 }
         }
@@ -87,6 +124,7 @@ struct PGYMApp: App {
             if phase == .active {
                 RoutineSyncCoordinator.shared.requestSync()
                 sessionSync.requestSync()
+                proofs.queue.requestStamp()
             }
         }
     }

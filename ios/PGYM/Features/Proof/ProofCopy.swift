@@ -44,11 +44,7 @@ enum ProofCopy {
     static let stampIt = "Stamp it"
     static let renderFailed = "Could not make the card. Try again."
 
-    // MARK: D9 pending (until card I7 stamps it on the server)
-    static let savedTitle = "Saved"
-    static let savedBody = "Your card is saved and will be stamped when it reaches the server."
-    static let savedNote = "The time on the card is set by the server when it arrives."
-    static let continueButton = "Continue"
+    // D9 Stamping strings live in StampCopy (card I7).
 
     // MARK: D12 Share
     static let shareProof = "Share proof"

@@ -2,12 +2,13 @@ import CoreGraphics
 import DesignSystem
 import SwiftUI
 
-/// Proof camera, card editor and share: views D6, D7, D8 and D12 (card I6). The upload, the server
-/// stamp and D11 are card I7.
+/// Proof camera, card editor and share: views D6, D7, D8 and D12 (card I6). Card I7 adds the upload,
+/// the server stamp (`ProofStampQueue`), D9 as the stamp's pending state on D11, D10 and D11.
 ///
-/// The flow runs over D2 and the session stays an open draft until Stamp it is confirmed, so Close on
+/// The flow runs over D2 and the session stays an open draft until Stamp it is tapped, so Close on
 /// the camera goes back to D2 with the session intact. Files are saved the moment they exist (photo on
-/// the shutter, card on Stamp it), so after a kill D2 reopens straight into D8 or the saved card.
+/// the shutter, card on Stamp it), so after a kill D2 reopens straight into D8, or ends the session if
+/// the card was already saved. Stamp it goes to D11 at once; nothing waits on the network.
 enum ProofFeature {
     enum Step: Equatable {
         case permission(CameraPermission)
@@ -35,6 +36,26 @@ enum ProofFeature {
         let card = try ProofCardRenderer.render(photo: photo, summary: summary, options: options)
         let jpeg = try ProofImageIO.cardJPEG(card, size: options.size)
         try store.saveCard(jpeg, record: ProofStore.CardRecord(options: options, stampTappedAt: tappedAt), for: sessionID)
+        return jpeg
+    }
+
+    /// The card summary with the server's stamp: the number, the server's time and the streak replace
+    /// PENDING and the phone's time (pgym-architecture.md, "Offline": "the server time then replaces it").
+    static func stampedSummary(session: WorkoutSession, receipt: StampReceipt, unit: WeightUnit) -> ProofCardSummary {
+        ProofCardSummary(session: session, unit: unit, stamp: receipt.stampState, now: session.endedAt ?? receipt.stampedAt)
+    }
+
+    /// Re-renders `card.jpg` from the saved photo with the options picked on D8 and the server's stamp,
+    /// and saves it over the pending card. This is the card that is shared.
+    @discardableResult
+    static func restampCard(session: WorkoutSession, receipt: StampReceipt, unit: WeightUnit, store: ProofStore) throws -> Data {
+        guard let photo = store.loadPhoto(session.id), let record = store.record(session.id) else {
+            throw StampError.missingFiles
+        }
+        let summary = stampedSummary(session: session, receipt: receipt, unit: unit)
+        let card = try ProofCardRenderer.render(photo: photo, summary: summary, options: record.options)
+        let jpeg = try ProofImageIO.cardJPEG(card, size: record.options.size)
+        try store.saveCard(jpeg, record: record, for: session.id)
         return jpeg
     }
 }
@@ -93,15 +114,18 @@ struct ProofFlowView: View {
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         case .saved:
-            ProofSavedScreen(sessionID: session.id, store: store) {
-                onFinished(store.record(session.id)?.stampTappedAt ?? .now)
-            }
-            .transition(.opacity)
+            // The card was saved before a kill: the session ends now and D11 takes over.
+            Color.ink.ignoresSafeArea()
         }
     }
 
     private func start() {
         let first = ProofFeature.firstStep(sessionID: session.id, store: store)
+        if first == .saved {
+            step = .saved
+            onFinished(store.record(session.id)?.stampTappedAt ?? .now)
+            return
+        }
         if first == .editor {
             guard let saved = store.loadPhoto(session.id) else {
                 step = CameraPermission.current == .granted ? .camera : .permission(CameraPermission.current)
@@ -145,61 +169,12 @@ struct ProofFlowView: View {
         _ = try await Task.detached(priority: .userInitiated) {
             try ProofFeature.stamp(photo: photo, summary: summary, options: options, sessionID: id, tappedAt: tappedAt, store: store)
         }.value
-        go(.saved)
+        // Straight to D11: the upload and the stamp run in the queue.
+        step = .saved
+        onFinished(tappedAt)
     }
 
     private func summary(stamp: ProofStampState, now: Date = .now) -> ProofCardSummary {
         ProofCardSummary(session: session, unit: unit, stamp: stamp, now: now)
-    }
-}
-
-/// After Stamp it: the card as saved, waiting for the server's number and time (card I7 turns this
-/// into D11). Share proof opens once the card is stamped.
-struct ProofSavedScreen: View {
-    let sessionID: String
-    let store: ProofStore
-    var onContinue: () -> Void
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var appeared = false
-
-    var body: some View {
-        let data = store.cardData(sessionID)
-        VStack(alignment: .leading, spacing: Spacing.grid(4)) {
-            Text(ProofCopy.savedTitle)
-                .pgymText(.display, size: 56)
-                .foregroundStyle(Color.chalk)
-                .accessibilityAddTraits(.isHeader)
-            if let data, let card = ProofImageIO.decode(data) {
-                Image(decorative: card, scale: 1)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.photo, style: .continuous))
-                    .frame(maxWidth: .infinity, maxHeight: 420)
-                    .scaleEffect(appeared || reduceMotion ? 1 : 0.94)
-                    .opacity(appeared ? 1 : 0)
-                    .accessibilityLabel("Proof card, proof pending, will stamp when online")
-                    .accessibilityAddTraits(.isImage)
-            }
-            Text(ProofCopy.savedBody)
-                .pgymText(.body, size: 16)
-                .foregroundStyle(Color.bone)
-            Text(ProofCopy.savedNote)
-                .pgymText(.body, size: 13)
-                .foregroundStyle(Color.steel)
-            Spacer(minLength: 0)
-            ProofShareActions(cardJPEG: data, proofNumber: nil)
-            Button(ProofCopy.continueButton, action: onContinue)
-                .font(.pgym(.bodyMedium, size: 17))
-                .foregroundStyle(Color.chalk)
-                .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
-                .accessibilityIdentifier("saved.continue")
-        }
-        .padding(.horizontal, Spacing.screenMargin)
-        .padding(.vertical, Spacing.grid(3))
-        .background(Color.ink.ignoresSafeArea())
-        .onAppear {
-            withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { appeared = true }
-        }
     }
 }

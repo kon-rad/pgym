@@ -96,6 +96,8 @@ struct UserProfile: Equatable, Sendable {
     /// Server-owned, read for the reminder copy ("One session locks week {week}").
     var streakWeeks: Int? = nil
     var proofCount: Int? = nil
+    /// `physiqueConsent`: the private score is on (D10, card I7). Nil or false is off.
+    var physiqueConsent: Bool? = nil
 
     /// The plan stored on the document, if it is complete and consistent.
     var plan: WeeklyPlan? {
