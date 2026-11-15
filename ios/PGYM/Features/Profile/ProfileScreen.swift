@@ -2,34 +2,33 @@ import DesignSystem
 import SwiftData
 import SwiftUI
 
-/// F1 Profile. Name and member-since come from sign-in (card I2). Routines (F2) is linked here
-/// (card I4). The account block (email, verification, sign out, delete account) sits here until
-/// card I8 builds F5 Settings and F6 Privacy and data, where the flow spec puts those rows.
+/// F1 Profile: name, member since, proof count and longest streak, and the way into every setting.
+/// The account rows (email, sign out) live in F5 and Delete account in F6, where the flow spec puts
+/// them (card I8). Local only: works offline.
 struct ProfileScreen: View {
     static let viewID = "F1"
 
     @Environment(AppSession.self) private var session
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(RoutineStore.activeDescriptor) private var routines: [Routine]
+    @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
 
-    @State private var confirmingSignOut = false
-    @State private var verificationSent = false
     @State private var path: [ProfileRoute] = []
 
     var body: some View {
+        let facts = StreakFacts.make(sessions: SessionSnapshot.all(sessions), profile: session.profile, now: .now, timeZone: .current)
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.cardGap) {
                     header
 
                     HStack(spacing: Spacing.cardGapMin) {
-                        StatTile(label: "Proofs", value: "0")
-                        StatTile(label: "Longest streak", value: "0", unit: "wk")
+                        StatTile(label: ProfileCopy.proofsLabel, value: "\(facts.proofCount)")
+                            .accessibilityIdentifier("f1.proofs")
+                        StatTile(label: ProfileCopy.longestLabel, value: "\(facts.longestStreak)", unit: facts.longestStreak == 1 ? "week" : "weeks")
+                            .accessibilityIdentifier("f1.longest")
                     }
 
                     links
-
-                    account
                 }
                 .padding(.horizontal, Spacing.screenMargin)
                 .padding(.top, Spacing.grid(4))
@@ -42,12 +41,12 @@ struct ProfileScreen: View {
             .navigationDestination(for: ProfileRoute.self) { route in
                 switch route {
                 case .routines: RoutinesScreen()
+                case .goal: GoalScheduleScreen()
+                case .settings: SettingsScreen()
+                case .privacy: PrivacyDataScreen()
+                case .about: AboutScreen()
                 case .deleteAccount: DeleteAccountScreen()
                 }
-            }
-            .confirmationDialog(AuthCopy.Profile.signOutTitle, isPresented: $confirmingSignOut, titleVisibility: .visible) {
-                Button(AuthCopy.Profile.signOut, role: .destructive) { try? session.signOut() }
-                Button(AuthCopy.Profile.cancel, role: .cancel) {}
             }
             .task { await session.refreshUser() }
         }
@@ -56,7 +55,7 @@ struct ProfileScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(2)) {
-            Text(session.displayName ?? "Profile")
+            Text((session.displayName ?? "Profile").uppercased())
                 .pgymText(.display)
                 .foregroundStyle(Color.chalk)
                 .lineLimit(2)
@@ -64,7 +63,7 @@ struct ProfileScreen: View {
                 .accessibilityAddTraits(.isHeader)
 
             if let month = memberSince {
-                Text(AuthCopy.Profile.memberSince(month))
+                Text(AuthCopy.Profile.memberSince(month).uppercased())
                     .pgymText(.label)
                     .foregroundStyle(Color.steel)
             }
@@ -76,100 +75,34 @@ struct ProfileScreen: View {
         return created.formatted(.dateTime.month(.wide).year())
     }
 
-    /// The F1 rows from pgym-app-copy.md. Routines now; Goal and schedule, Settings, Privacy and data,
-    /// Agent access and About come with card I8.
+    /// The F1 rows from pgym-app-copy.md. Agent access (F9) is its own card and is not linked yet.
     private var links: some View {
         VStack(spacing: Spacing.grid(2)) {
-            NavigationLink(value: ProfileRoute.routines) {
-                ProfileLinkRow(title: "Routines", detail: routines.isEmpty ? nil : "\(routines.count)")
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("profile.routines")
+            row(.routines, title: ProfileCopy.routines, detail: routines.isEmpty ? nil : "\(routines.count)", id: "profile.routines")
+            row(.goal, title: ProfileCopy.goalAndSchedule, detail: session.profile?.goalPerWeek.map { "\($0)/wk" }, id: "profile.goal")
+            row(.settings, title: ProfileCopy.settings, detail: nil, id: "profile.settings")
+            row(.privacy, title: ProfileCopy.privacy, detail: nil, id: "profile.privacy")
+            row(.about, title: ProfileCopy.about, detail: nil, id: "profile.about")
         }
         .padding(.top, Spacing.grid(2))
     }
 
-    private var account: some View {
-        VStack(alignment: .leading, spacing: Spacing.grid(3)) {
-            Text(AuthCopy.Profile.accountEmail)
-                .pgymText(.label)
-                .foregroundStyle(Color.steel)
-                .padding(.top, Spacing.grid(4))
-
-            if let email = session.user?.email {
-                Text(email)
-                    .pgymText(.bodyMedium, size: 17)
-                    .foregroundStyle(Color.chalk)
-                    .accessibilityIdentifier("f1.email")
-            }
-
-            if session.user?.needsEmailVerification == true, let email = session.user?.email {
-                VStack(alignment: .leading, spacing: Spacing.grid(1)) {
-                    InlineNote(
-                        text: verificationSent ? AuthCopy.Profile.linkSent(email) : AuthCopy.Profile.notVerified,
-                        tone: .info,
-                        identifier: "f1.verification"
-                    )
-                    if !verificationSent {
-                        Button(AuthCopy.Profile.resend) {
-                            Task {
-                                if (try? await session.resendVerificationEmail()) != nil {
-                                    withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { verificationSent = true }
-                                }
-                            }
-                        }
-                        .font(.pgym(.bodyMedium, size: 15))
-                        .foregroundStyle(Color.chalk)
-                        .frame(minHeight: Spacing.touchTargetMin)
-                    }
-                }
-            }
-
-            SecondaryButton(AuthCopy.Profile.signOut) { confirmingSignOut = true }
-                .accessibilityIdentifier("f1.signOut")
-
-            Button(AuthCopy.Profile.deleteAccount) { path.append(.deleteAccount) }
-                .font(.pgym(.bodyMedium, size: 15))
-                .foregroundStyle(Color.bone)
-                .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
-                .accessibilityIdentifier("f1.deleteAccount")
+    private func row(_ route: ProfileRoute, title: String, detail: String?, id: String) -> some View {
+        NavigationLink(value: route) {
+            LinkRow(title: title, detail: detail)
         }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
     }
 }
 
 enum ProfileRoute: Hashable {
     case routines
+    case goal
+    case settings
+    case privacy
+    case about
     case deleteAccount
-}
-
-/// A link row on F1: title, an optional mono count, a chevron.
-private struct ProfileLinkRow: View {
-    let title: String
-    let detail: String?
-
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(.pgym(.bodyMedium, size: 17))
-                .foregroundStyle(Color.chalk)
-            Spacer()
-            if let detail {
-                Text(detail)
-                    .font(.pgym(.data, size: 15))
-                    .foregroundStyle(Color.steel)
-            }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.steel)
-                .accessibilityHidden(true)
-        }
-        .frame(minHeight: Spacing.touchTargetMin)
-        .padding(.horizontal, Spacing.grid(4))
-        .padding(.vertical, Spacing.grid(1))
-        .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Color.iron))
-        .contentShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .accessibilityElement(children: .combine)
-    }
 }
 
 struct ProfileScreen_Previews: PreviewProvider {

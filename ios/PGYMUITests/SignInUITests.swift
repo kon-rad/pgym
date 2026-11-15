@@ -59,7 +59,10 @@ final class SignInUITests: XCTestCase {
         tabBar.buttons["Profile"].tap()
         XCTAssertTrue(element(app, "screen.F1").waitForExistence(timeout: 5))
 
-        app.buttons["f1.deleteAccount"].tap()
+        // Card I8: Delete account lives in F6 Privacy and data.
+        app.buttons["profile.privacy"].tap()
+        XCTAssertTrue(element(app, "screen.F6").waitForExistence(timeout: 5))
+        app.buttons["f6.deleteAccount"].tap()
         XCTAssertTrue(element(app, "screen.F7").waitForExistence(timeout: 5))
         let deleteButton = app.buttons["f7.delete"]
         XCTAssertFalse(deleteButton.isEnabled, "DELETE must be typed first")

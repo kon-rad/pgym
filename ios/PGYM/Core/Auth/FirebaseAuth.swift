@@ -194,6 +194,8 @@ final class FirestoreUserRepository: UserRepository {
             units: (data["units"] as? String).flatMap(NewUserProfile.Units.init(rawValue:)),
             streakWeeks: (data["streakWeeks"] as? NSNumber)?.intValue,
             proofCount: (data["proofCount"] as? NSNumber)?.intValue,
+            longestStreak: (data["longestStreak"] as? NSNumber)?.intValue,
+            passWeeks: (data["passWeeks"] as? NSNumber)?.intValue,
             physiqueConsent: data["physiqueConsent"] as? Bool
         )
     }

@@ -96,6 +96,9 @@ struct UserProfile: Equatable, Sendable {
     /// Server-owned, read for the reminder copy ("One session locks week {week}").
     var streakWeeks: Int? = nil
     var proofCount: Int? = nil
+    /// Server-owned, for F1 and Today (card I8).
+    var longestStreak: Int? = nil
+    var passWeeks: Int? = nil
     /// `physiqueConsent`: the private score is on (D10, card I7). Nil or false is off.
     var physiqueConsent: Bool? = nil
 

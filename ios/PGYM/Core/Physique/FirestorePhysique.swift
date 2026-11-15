@@ -33,6 +33,15 @@ final class FirestorePhysiqueSource: PhysiqueSource {
         return nil
     }
 
+    func allRecords(uid: String) async throws -> [String: PhysiqueRecord] {
+        let snapshot = try await sessions(uid).whereField("status", isEqualTo: "stamped").getDocuments()
+        var records: [String: PhysiqueRecord] = [:]
+        for document in snapshot.documents {
+            if let record = Self.record(document.data()["physique"]) { records[document.documentID] = record }
+        }
+        return records
+    }
+
     nonisolated static func record(_ value: Any?) -> PhysiqueRecord? {
         guard var map = value as? [String: Any] else { return nil }
         if let at = map["analyzedAt"] as? Timestamp { map["analyzedAt"] = at.dateValue() }
