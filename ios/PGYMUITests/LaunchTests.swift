@@ -5,10 +5,12 @@ final class LaunchTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// The app launches to the tab shell: three tabs, Today selected, C1 on screen.
+    /// A returning, signed-in user launches past the sign-in gate to the tab shell:
+    /// three tabs, Today selected, C1 on screen.
     @MainActor
     func testLaunchesToTabShell() {
         let app = XCUIApplication()
+        app.launchArguments = ["-pgym-ui-test-signed-in"]
         app.launch()
 
         let tabBar = app.tabBars.firstMatch
