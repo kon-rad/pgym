@@ -1,0 +1,22 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": ".",
+      "codebase": "default",
+      "runtime": "nodejs20",
+      "ignore": ["node_modules", ".git", "test", "src", "*.log", ".secret.local"],
+      "predeploy": ["npm run build"]
+    }
+  ],
+  "emulators": {
+    "auth": { "port": 9571 },
+    "firestore": { "port": 8571 },
+    "functions": { "port": 5571 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}
