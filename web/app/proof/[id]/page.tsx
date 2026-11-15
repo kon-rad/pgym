@@ -27,15 +27,15 @@ export default function ProofPage() {
           </p>
           <CallToAction source="proof" />
         </div>
-        <div className="hero-visual">
+        <div className="hero-visual center-card">
           <ProofCard
             proof={1}
-            week={1}
+            streakWeeks={0}
             time="YOUR FIRST SESSION"
             name="Day one"
             sets={1}
-            kg="0"
-            duration="00:00"
+            total="0"
+            duration="0:00"
             filter="iron"
             scene={3}
             animateStamp
