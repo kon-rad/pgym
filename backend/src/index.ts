@@ -8,8 +8,10 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/v2';
 import { defineSecret, defineString } from 'firebase-functions/params';
-import { onCall, type CallableOptions } from 'firebase-functions/v2/https';
+import { onCall, onRequest, type CallableOptions } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import * as agentTokens from './agentTokens';
+import { handleApi } from './api';
 import * as handlers from './handlers';
 import type { PhotoStore } from './photoStore';
 import { S3PhotoStore } from './s3PhotoStore';
@@ -60,6 +62,25 @@ export const getPhotoUrls = onCall(callable, (req) => handlers.getPhotoUrls(deps
 export const stampSession = onCall(callable, (req) => handlers.stampSession(deps(), req.auth?.uid, req.data));
 export const deleteSession = onCall(callable, (req) => handlers.deleteSession(deps(), req.auth?.uid, req.data));
 export const deleteAccount = onCall(callable, (req) => handlers.deleteAccount(deps(), req.auth?.uid));
+
+export const createAgentToken = onCall(callable, (req) => agentTokens.createAgentToken(deps(), req.auth?.uid, req.data));
+export const revokeAgentToken = onCall(callable, (req) => agentTokens.revokeAgentToken(deps(), req.auth?.uid, req.data));
+
+/**
+ * The agent API. Agents are not the app, so there is no App Check here: the
+ * personal access token is the credential. Public invoker, read-only, JSON.
+ */
+export const api = onRequest({ secrets: [awsAccessKeyId, awsSecretAccessKey], invoker: 'public', cors: false }, async (req, res) => {
+  const out = await handleApi(deps(), {
+    method: req.method,
+    path: req.path,
+    query: req.query as Record<string, unknown>,
+    headers: req.headers,
+  });
+  res.status(out.status).set(out.headers);
+  if (req.method === 'HEAD') res.end();
+  else res.send(JSON.stringify(out.body));
+});
 
 /** rollWeek only touches Firestore, so it gets no S3 credentials. */
 const noStore: PhotoStore = {

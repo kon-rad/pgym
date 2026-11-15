@@ -11,18 +11,20 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint . && tsc -p tsconfig.json --noEmit",
     "test": "firebase emulators:exec --only firestore,auth --project pgym-local \"vitest run\"",
-    "test:unit": "vitest run test/streak.test.ts test/s3PhotoStore.test.ts test/exports.test.ts",
+    "test:unit": "vitest run test/streak.test.ts test/s3PhotoStore.test.ts test/exports.test.ts test/openapi.test.ts",
     "emulators": "npm run build && firebase emulators:start --only firestore,auth,functions --project pgym-local"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",
     "@aws-sdk/s3-request-presigner": "^3.700.0",
     "firebase-admin": "^13.0.0",
-    "firebase-functions": "^6.1.0"
+    "firebase-functions": "^6.1.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
     "@firebase/rules-unit-testing": "^4.0.0",
+    "@seriousme/openapi-schema-validator": "^2.12.0",
     "@types/node": "^20.19.43",
     "eslint": "^9.15.0",
     "firebase": "^11.0.0",
