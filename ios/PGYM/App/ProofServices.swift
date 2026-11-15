@@ -19,6 +19,8 @@ final class ProofServices {
     let physique: PhysiqueSource
     let images: SignedImageCache
     let store: ProofStore
+    /// F6, E3 and E5: score deletion, photo deletion, session deletion (card I8).
+    let controls: DataControls
 
     /// The session whose D11 is showing over the tabs. Nil when none.
     var completedSessionID: String?
@@ -29,7 +31,9 @@ final class ProofServices {
         consent: PhysiqueConsent,
         physique: PhysiqueSource,
         images: SignedImageCache,
-        store: ProofStore = .standard
+        store: ProofStore = .standard,
+        privacy: PrivacyAPI? = nil,
+        defaults: UserDefaults = .standard
     ) {
         self.api = api
         self.queue = queue
@@ -37,6 +41,14 @@ final class ProofServices {
         self.physique = physique
         self.images = images
         self.store = store
+        self.controls = DataControls(
+            api: privacy ?? FakePrivacyAPI(),
+            consent: consent,
+            physique: physique,
+            store: store,
+            images: images,
+            defaults: defaults
+        )
     }
 
     /// Stamp it on D8 ended the session: show D11 at once and start the upload (pgym-flow-spec.md D8,
@@ -107,7 +119,9 @@ final class ProofServices {
                 consent: PhysiqueConsent(defaults: defaults, writer: FirestorePhysiqueConsentWriter()),
                 physique: FirestorePhysiqueSource(),
                 images: SignedImageCache(api: api),
-                store: store
+                store: store,
+                privacy: FirebasePrivacyAPI(),
+                defaults: defaults
             )
         }
         #endif
@@ -122,7 +136,9 @@ final class ProofServices {
             consent: PhysiqueConsent(defaults: defaults, writer: FakePhysiqueConsentWriter()),
             physique: FakePhysiqueSource(),
             images: SignedImageCache(api: api, directory: nil),
-            store: store
+            store: store,
+            privacy: FakePrivacyAPI(),
+            defaults: defaults
         )
     }
 }

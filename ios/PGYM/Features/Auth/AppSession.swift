@@ -226,6 +226,33 @@ final class AppSession {
         route = .main
     }
 
+    // MARK: F4 and F5 (card I8)
+
+    /// F4 Save: the plan the user last chose goes to `users/{uid}` (the server locks each week's goal
+    /// when the week opens, so this week's target does not move). The same merge write as onboarding.
+    func updatePlan(_ plan: WeeklyPlan) async throws {
+        guard let user else { return }
+        let units = profile?.units ?? startingUnits
+        try await users.saveOnboarding(OnboardingSettings(plan: plan, units: units, timezone: timezone), uid: user.uid)
+        var updated = profile ?? UserProfile(uid: user.uid)
+        updated.goalPerWeek = plan.goal
+        updated.gymDays = plan.orderedDays
+        updated.reminderTime = plan.time
+        profile = updated
+    }
+
+    /// F5 Units. Saved on the phone first (it works offline), then on `users/{uid}` with the plan the
+    /// document already holds.
+    func updateUnits(_ units: NewUserProfile.Units, defaults: UserDefaults = .standard) async throws {
+        defaults.set(units.rawValue, forKey: WeightUnit.preferenceKey)
+        guard let user else { return }
+        var updated = profile ?? UserProfile(uid: user.uid)
+        updated.units = units
+        profile = updated
+        guard let plan = updated.plan else { return }
+        try await users.saveOnboarding(OnboardingSettings(plan: plan, units: units, timezone: timezone), uid: user.uid)
+    }
+
     // MARK: Sign out and delete
 
     func signOut() throws {

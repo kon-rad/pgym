@@ -95,6 +95,7 @@ struct PGYMApp: App {
                         sessionSync.requestSync()
                         proofs.consent.load(uid: uid, profileValue: session.profile?.physiqueConsent)
                         proofs.queue.requestStamp()
+                        Task { await proofs.controls.retryPending() }
                     } else {
                         proofs.consent.reset()
                         proofs.images.removeAll()
@@ -115,6 +116,8 @@ struct PGYMApp: App {
                         Task {
                             await proofs.consent.flush()
                             proofs.queue.requestStamp()
+                            // A score delete that could not reach the server goes now (card I8).
+                            await proofs.controls.retryPending()
                         }
                     }
                 }

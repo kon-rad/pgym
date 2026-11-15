@@ -57,6 +57,9 @@ protocol PhysiqueSource: AnyObject {
     func observe(uid: String, sessionID: String, onChange: @escaping @MainActor (PhysiqueRecord?) -> Void) -> PhysiqueObservation
     /// The most recent score of an earlier session, for the trend line. Nil when there is none.
     func previousScore(uid: String, before stampedAt: Date, excluding sessionID: String) async -> Int?
+    /// Every stamped session's `physique`, by session ID (E1, E3, E5; card I8). Sessions without one
+    /// are absent. Throws when the server cannot be read.
+    func allRecords(uid: String) async throws -> [String: PhysiqueRecord]
 }
 
 /// Writes the consent flag: `users/{uid}.physiqueConsent` and `physiqueConsentAt` (server time).
@@ -214,6 +217,18 @@ final class FakePhysiqueSource: PhysiqueSource {
 
     func previousScore(uid: String, before stampedAt: Date, excluding sessionID: String) async -> Int? {
         previous
+    }
+
+    var allRecordsFailure: Error?
+
+    func allRecords(uid: String) async throws -> [String: PhysiqueRecord] {
+        if let allRecordsFailure { throw allRecordsFailure }
+        return records
+    }
+
+    /// The server side of `deletePhysiqueScores`, for the fake backend.
+    func removeAll() {
+        records = [:]
     }
 
     /// What `analyzePhysique` would write.
