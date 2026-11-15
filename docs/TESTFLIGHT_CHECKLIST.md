@@ -65,7 +65,7 @@ xcodebuild archive -scheme PGYM -destination 'generic/platform=iOS' \
   -archivePath build/PGYM.xcarchive CODE_SIGNING_ALLOWED=NO
 ```
 
-## Part 3: only Konrad can do these
+## Part 3: only the owner can do these
 
 Signing and the record:
 
