@@ -13,7 +13,7 @@ npm run build     # compiles src/ to lib/
 npm test          # starts the Firestore and Auth emulators, runs every test, stops them
 ```
 
-`npm run test:unit` runs only the tests that need no emulator (the streak table and S3 presigning).
+`npm run test:unit` runs only the tests that need no emulator (the streak table, S3 presigning and the OpenAPI document).
 
 No test calls AWS or any paid API: the functions take a `PhotoStore`, and the tests pass an in-memory fake.
 
@@ -28,6 +28,9 @@ No test calls AWS or any paid API: the functions take a `PhotoStore`, and the te
 | `src/photoStore.ts` | The `PhotoStore` interface and the S3 key layout |
 | `src/s3PhotoStore.ts` | `PhotoStore` on the AWS SDK v3 client and presigner; works with AWS S3 or MinIO |
 | `src/handlers.ts` | The logic of each function, with Firestore, the store and the clock passed in |
+| `src/agentTokens.ts` | Personal access tokens: generation, SHA-256 hashing, `createAgentToken`, `revokeAgentToken` |
+| `src/apiSchemas.ts` | The agent API's zod schemas and route table, and the OpenAPI 3.1 document built from them |
+| `src/api.ts` | The agent API: token lookup, rate limit, scope checks, the six `/v1` endpoints |
 | `src/index.ts` | The exported Cloud Functions |
 
 ## Functions
@@ -39,6 +42,9 @@ No test calls AWS or any paid API: the functions take a `PhotoStore`, and the te
 | `stampSession` | Callable `{sessionId}` | Checks the photo and card exist, then in one transaction: server timestamp, next proof number, totals, exercise stats, week count and streak. Calling it twice returns the first stamp |
 | `deleteSession` | Callable `{sessionId}` | Deletes both S3 objects and the document, lowers the proof count, recounts the open week and rebuilds the affected exercise stats. Proof numbers are never reused |
 | `deleteAccount` | Callable | Deletes every S3 object under `users/{uid}/`, every document under `users/{uid}`, then the auth user |
+| `createAgentToken` | Callable `{name, scopes, expiresInDays?}` | Makes a `pgym_pat_` token, returns it once, stores only its SHA-256 hash. 90 days by default, `null` for no expiry, at most 20 active |
+| `revokeAgentToken` | Callable `{tokenId}` | Marks the caller's token revoked, effective on the next request |
+| `api` | HTTP | The read-only agent API under `/v1`. See [`docs/API.md`](../docs/API.md) |
 | `rollWeek` | Scheduled, hourly | Closes each user's week 6 hours after their local Monday 00:00: extends, holds with a pass week, or breaks the streak |
 
 ## Streak rules

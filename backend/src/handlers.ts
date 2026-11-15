@@ -83,13 +83,13 @@ function sessionRef(db: Firestore, uid: string, sessionId: string): DocumentRefe
   return db.doc(`users/${uid}/sessions/${sessionId}`);
 }
 
-function toDate(v: unknown): Date | null {
+export function toDate(v: unknown): Date | null {
   if (v instanceof Timestamp) return v.toDate();
   if (v instanceof Date) return v;
   return null;
 }
 
-function userTimeZone(user: FirebaseFirestore.DocumentData | undefined): string {
+export function userTimeZone(user: FirebaseFirestore.DocumentData | undefined): string {
   return isValidTimeZone(user?.timezone) ? user.timezone : 'UTC';
 }
 
@@ -97,7 +97,7 @@ interface StoredStreakState extends StreakState {
   closesAt: Timestamp;
 }
 
-function readStreakState(raw: unknown): StreakState | null {
+export function readStreakState(raw: unknown): StreakState | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.weekKey !== 'string') return null;

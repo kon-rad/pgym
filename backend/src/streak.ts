@@ -52,7 +52,7 @@ export type WeekOutcome = 'hit' | 'pass' | 'broken' | 'none';
 // Calendar helpers
 // ---------------------------------------------------------------------------
 
-interface CivilDate {
+export interface CivilDate {
   year: number;
   month: number; // 1-12
   day: number;
@@ -129,6 +129,14 @@ export function localDate(instant: Date, timeZone: string): CivilDate {
 function addDays(date: CivilDate, days: number): CivilDate {
   const d = new Date(Date.UTC(date.year, date.month - 1, date.day + days));
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+}
+
+/**
+ * The instants local `date` starts and the next day starts in `timeZone`.
+ * The agent API reads `from` and `to` dates this way, both ends inclusive.
+ */
+export function dayBounds(date: CivilDate, timeZone: string): { start: Date; end: Date } {
+  return { start: localMidnight(date, timeZone), end: localMidnight(addDays(date, 1), timeZone) };
 }
 
 /** ISO weekday, Monday = 1 ... Sunday = 7. */
