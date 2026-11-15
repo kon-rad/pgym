@@ -216,9 +216,9 @@ enum ProgressModel {
             let kg = max(0, set.weightKg ?? 0)
             let e1rm = SessionMath.e1rm(weightKg: kg, reps: reps)
             if let current = best {
-                if e1rm > current.e1rm || (e1rm == current.e1rm && kg > current.kg) { best = (kg, reps, e1rm) }
+                if e1rm > current.e1rm || (e1rm == current.e1rm && kg > current.kg) { best = (kg: kg, reps: reps, e1rm: e1rm) }
             } else {
-                best = (kg, reps, e1rm)
+                best = (kg: kg, reps: reps, e1rm: e1rm)
             }
         }
         return best
@@ -276,12 +276,12 @@ enum ProgressModel {
             ))
             if let top = bestSet(exercise.sets) {
                 if top.e1rm > 0 { points.append(LiftHistory.Point(date: session.startedAt, e1rmKg: top.e1rm)) }
-                if best == nil || top.e1rm > best!.e1rm { best = top }
+                if top.e1rm > (best?.e1rm ?? -1) { best = top }
             }
         }
         return LiftHistory(
             name: name,
-            best: best.map { ($0.kg, $0.reps) },
+            best: best.map { (kg: $0.kg, reps: $0.reps) },
             bestE1rmKg: best?.e1rm ?? 0,
             points: points,
             entries: entries.reversed()
