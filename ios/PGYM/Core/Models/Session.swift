@@ -65,6 +65,23 @@ final class WorkoutSession {
     /// The last sync attempt failed; for the "will sync" line and the retry back-off.
     var syncFailures: Int
 
+    // MARK: Stamp (card I7). All optional, so stores from earlier builds open without a migration.
+
+    /// The server's proof number. Nil until `stampSession` answers; the phone never makes one up.
+    var proofNumber: Int? = nil
+    /// The server's clock at the stamp. Replaces the phone time on the card.
+    var stampedAt: Date? = nil
+    /// `users/{uid}/sessions/{id}/photo.jpg` and `card.jpg` once stamped, for signed links later.
+    var photoKey: String? = nil
+    var cardKey: String? = nil
+    /// The whole `stampSession` answer (week, streak, new bests), JSON, for D11 after a relaunch.
+    var stampReceiptData: Data? = nil
+    /// The physique score was on (on this phone's knowledge) when the stamp was asked for, so D11
+    /// waits for a score. Nil or false: no score UI for this session.
+    var physiqueRequested: Bool? = nil
+    /// Upload or stamp attempts that failed, for the back-off.
+    var stampFailures: Int? = nil
+
     static let defaultRestSeconds = 90
 
     init(
@@ -100,6 +117,15 @@ final class WorkoutSession {
 
     /// The draft being logged right now: not ended, not discarded.
     var isActive: Bool { status == .draft && endedAt == nil }
+
+    /// Ended with a proof card and waiting for the server's stamp (offline, or uploading).
+    var awaitsStamp: Bool { status == .draft && endedAt != nil }
+
+    /// The server's answer, once stamped.
+    var stampReceipt: StampReceipt? {
+        get { stampReceiptData.flatMap { try? JSONDecoder().decode(StampReceipt.self, from: $0) } }
+        set { stampReceiptData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
 
     /// Exercises in the order the user sees them.
     var orderedExercises: [SessionExercise] {
