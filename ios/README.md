@@ -52,4 +52,30 @@ The app reads Firebase settings from `PGYM/Resources/GoogleService-Info.plist`. 
 - `Config/GoogleService-Info.example.plist` shows the keys, with empty values.
 - To point the app at the local emulator suite, enable the `PGYM_EMULATOR_HOST` variable in the scheme (Edit Scheme, Run, Arguments). Auth uses port 9099, Firestore 8080, Functions 5001.
 
-Google Sign-In also needs the `REVERSED_CLIENT_ID` as a URL scheme; that is wired up with sign-in (card I2).
+## Sign-in (card I2)
+
+Views A1 Welcome, A2 Email sign-in, A3 Create account (A2's create mode), A4 Reset password, A5 Year of birth, and F7 Delete account. `AppRootView` is the gate: nothing past A1 to A5 shows without a signed-in user whose `users/{uid}` has a birth year.
+
+| Piece | Where |
+|---|---|
+| Protocols `AuthService`, `UserRepository`, `AccountFunctions` | `PGYM/Core/Auth/AuthServices.swift` |
+| Firebase implementations (Apple with nonce, Google, email; Firestore `users/{uid}`; callable `deleteAccount`) | `PGYM/Core/Auth/FirebaseAuth.swift` |
+| In-memory fakes (tests, UI tests, builds without Firebase) | `PGYM/Core/Auth/FakeAuth.swift` |
+| Routing: A5 on first sign-in, onboarding for a new user, tabs for a returning one, delete and sign out | `PGYM/Features/Auth/AppSession.swift` |
+
+Which services run is decided at launch by `AppEnvironment`:
+
+| Situation | Services |
+|---|---|
+| Launch argument `-pgym-ui-test` | Fakes, signed out |
+| Launch argument `-pgym-ui-test-signed-in` | Fakes, a returning user signed in |
+| `GoogleService-Info.plist` present | Firebase (or the emulator, with `PGYM_EMULATOR_HOST`) |
+| No plist | Fakes, so every screen can be clicked through on a simulator |
+
+To use the real providers:
+
+1. **Google:** copy `Config/Local.example.xcconfig` to `Config/Local.xcconfig` (gitignored) and set `PGYM_GOOGLE_REVERSED_CLIENT_ID` to `REVERSED_CLIENT_ID` from your plist. `Config/Info.plist` registers it as the URL scheme.
+2. **Apple:** set your team in Xcode (Signing & Capabilities). `Config/PGYM.entitlements` carries the Sign in with Apple entitlement for device builds; enable Apple as a provider in Firebase Authentication with your Services ID and key so `revokeToken` works on account deletion.
+3. **Email:** enable Email/Password in Firebase Authentication. Verification and reset emails use Firebase's templates.
+
+The minimum age (`AgePolicy.minimumAge`, 13) and the password length (`PasswordPolicy.minimumLength`, 8) are placeholders for open decisions.

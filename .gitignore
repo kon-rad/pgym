@@ -23,6 +23,7 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.mobileprovision
+ios/Config/Local.xcconfig
 *.p12
 *.p8
 .build/
