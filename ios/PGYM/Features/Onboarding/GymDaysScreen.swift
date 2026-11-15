@@ -64,9 +64,10 @@ struct GymDaysScreen: View {
 }
 
 /// One day: a tall pill with the three-letter name. On: Plate with Ink text.
-private struct DayToggle: View {
+struct DayToggle: View {
     let day: Weekday
     let isOn: Bool
+    var identifierPrefix = "b2"
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -96,23 +97,25 @@ private struct DayToggle: View {
         .accessibilityLabel(day.full)
         .accessibilityValue(isOn ? "Gym day" : "Rest day")
         .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
-        .accessibilityIdentifier("b2.day.\(day.rawValue)")
+        .accessibilityIdentifier("\(identifierPrefix).day.\(day.rawValue)")
     }
 }
 
 /// "Usual time" with a wheel, on an Iron card.
-private struct TimeCard: View {
+struct TimeCard: View {
     let time: ReminderTime
+    var label: String = OnboardingCopy.Days.timeLabel
+    var identifier = "b2.time"
     let onChange: (ReminderTime) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(2)) {
-            Text(OnboardingCopy.Days.timeLabel)
+            Text(label)
                 .pgymText(.label)
                 .foregroundStyle(Color.steel)
                 .accessibilityHidden(true)
             DatePicker(
-                OnboardingCopy.Days.timeLabel,
+                label,
                 selection: Binding(get: { Self.date(for: time) }, set: { onChange(Self.time(for: $0)) }),
                 displayedComponents: .hourAndMinute
             )
@@ -122,7 +125,7 @@ private struct TimeCard: View {
             .frame(maxWidth: .infinity)
             .frame(height: 140)
             .clipped()
-            .accessibilityIdentifier("b2.time")
+            .accessibilityIdentifier(identifier)
         }
         .padding(Spacing.grid(4))
         .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Color.iron))
