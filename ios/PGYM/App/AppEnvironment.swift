@@ -38,7 +38,11 @@ enum AppEnvironment {
             let user = AuthUser(uid: "returning-user", email: "returning@example.com", displayName: "Sam", providers: [.email])
             let auth = FakeAuthService(currentUser: user)
             let users = FakeUserRepository()
-            users.seed(UserProfile(uid: user.uid, displayName: "Sam", email: user.email, birthYear: 1990, createdAt: .now))
+            // Onboarding already done: a returning user lands on the tabs.
+            users.seed(UserProfile(
+                uid: user.uid, displayName: "Sam", email: user.email, birthYear: 1990, createdAt: .now,
+                goalPerWeek: 4, gymDays: [.mon, .tue, .thu, .fri], reminderTime: .default, units: .kg
+            ))
             return .fake(auth: auth, users: users)
         }
     }

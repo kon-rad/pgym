@@ -5,7 +5,9 @@ import SwiftUI
 /// `users/{uid}` with a birth year.
 struct AppRootView: View {
     @Environment(AppSession.self) private var session
+    @Environment(AppServices.self) private var services
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -24,8 +26,10 @@ struct AppRootView: View {
             case .underMinimumAge:
                 UnderMinimumAgeScreen()
                     .transition(.opacity)
-            case .onboarding, .main:
-                // `.onboarding` gets B1 to B5 in card I3; until then a new user lands on the tabs.
+            case .onboarding:
+                OnboardingFlowView()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .main:
                 RootTabView()
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             case .profileUnavailable:
@@ -37,6 +41,28 @@ struct AppRootView: View {
         // A finished sign-in is a finished action: one success tap.
         .sensoryFeedback(.success, trigger: session.isSignedIn) { _, signedIn in signedIn }
         .task { await session.start() }
+        .onChange(of: session.route) { _, route in
+            Task { await syncReminders(route: route) }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // The day moved on or reminders fired while away: count them and plan again.
+            guard phase == .active, session.route == .main else { return }
+            Task { await services.reminders.reschedule() }
+        }
+    }
+
+    /// Keeps the phone's reminders in step with who is signed in.
+    private func syncReminders(route: AppSession.Route) async {
+        switch route {
+        case .signedOut:
+            services.reminders.reset()
+        case .main:
+            // A new phone or a reinstall: take this week's plan from `users/{uid}`.
+            await services.reminders.adoptIfMissing(session.profile?.plan, remindersEnabled: true)
+            await services.reminders.reschedule()
+        default:
+            break
+        }
     }
 }
 
