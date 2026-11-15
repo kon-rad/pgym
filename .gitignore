@@ -1,0 +1,31 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+*.log
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+GoogleService-Info.plist
+*service-account*.json
+# Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.ipa
+*.dSYM.zip
+*.mobileprovision
+*.p12
+*.p8
+.build/
+.swiftpm/
+# Local S3 stand-in
+.minio/
