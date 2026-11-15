@@ -136,3 +136,36 @@ How it stays offline-first:
 - The display unit is the `units` on the user's profile (B5, card I3), then a choice saved on the phone, then the region's default (`WeightUnit.preferred`).
 - Like routine sync, the queue talks to Firestore only on the Firebase backend, for the signed-in user from `AppSession`; with the fake auth backend sessions stay queued on the phone.
 - The rest notification's identifier is kept outside the reminders' `pgym.` prefix, so a reminder reschedule never removes it.
+
+## Proof camera, card and share (card I6)
+
+Views D6 Camera permission, D7 Proof camera, D8 Proof card editor and D12 Share. The card follows `pgym-proof-card-spec.md` (card D4) to the pixel.
+
+| Piece | Where |
+|---|---|
+| `ProofCardRenderer.render(photo:summary:options:)`: pure function to a 1080 x 1350 or 1080 x 1920 `CGImage` | `PGYM/Features/Proof/ProofCardRenderer.swift` |
+| The four filters as Core Image chains | `ProofFilterChain.swift` |
+| Text rules: name shrink steps, timestamp, stamp lines, stat row, kg and lb | `ProofCardText.swift` |
+| Card model (no score, tip or location field), sizes, stat-row choice | `ProofCardModel.swift` |
+| Clean JPEGs: photo at 2048 px with orientation applied, card at 0.85; no EXIF, no GPS | `ProofImageIO.swift` |
+| AVFoundation camera, front and back, unmirrored photo | `ProofCamera.swift` |
+| Screens and the flow over D2 | `CameraPermissionScreen.swift`, `ProofCameraScreen.swift`, `ProofCardEditorScreen.swift`, `ProofShare.swift`, `ProofFeature.swift` |
+| Files on the phone: `Application Support/Proofs/{sessionId}/photo.jpg`, `card.jpg`, `card.json` | `ProofStore.swift` |
+
+How it fits together:
+
+- Finish and take proof on D2 opens the flow over D2 without ending the session, so Close on D6 or D7 goes back to D2 intact. The session ends (status stays `draft`, `endedAt` set) when the card is saved; card I7 uploads `photo.jpg` and `card.jpg`, calls `stampSession`, re-renders the card with the server's number and time, and replaces the saved screen with D11.
+- The photo is saved the moment the shutter fires, the card the moment Stamp it is tapped, so after a kill D2 reopens into D8 or the saved card.
+- There is no photo-library import anywhere. Photos access is add-only, for Save to Photos.
+- Share and Save to Photos stay disabled until the card is stamped (D4: only a stamped card is shared).
+- Camera, timer, filter, size and stat row are remembered (`ProofPreferences`).
+
+Sample cards: the tests write four when asked:
+
+```sh
+TEST_RUNNER_PGYM_SAMPLE_DIR="$PWD/../docs/proof-card-samples" \
+  xcodebuild -scheme PGYM -destination 'platform=iOS Simulator,name=iPhone 16' test \
+  -only-testing:PGYMTests/ProofCardTests/testWriteSampleCards
+```
+
+The test photo `PGYMTests/Fixtures/proof-test-photo.png` is synthetic (`python3 Tools/make-proof-test-photo.py`).
