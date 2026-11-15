@@ -14,6 +14,8 @@ export interface PhotoStore {
   listKeys(prefix: string): Promise<string[]>;
   /** Delete each key. Missing keys are not an error. */
   deleteKeys(keys: string[]): Promise<void>;
+  /** The object's bytes. Rejects when it is missing or larger than `maxBytes`. Used by analyzePhysique. */
+  getBytes(key: string, maxBytes: number): Promise<Uint8Array>;
 }
 
 export const PUT_EXPIRES_SEC = 5 * 60;

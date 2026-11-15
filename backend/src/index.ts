@@ -6,20 +6,28 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getFunctions } from 'firebase-admin/functions';
 import { logger } from 'firebase-functions/v2';
 import { defineSecret, defineString } from 'firebase-functions/params';
 import { onCall, onRequest, type CallableOptions } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import * as agentTokens from './agentTokens';
 import { handleApi } from './api';
 import * as handlers from './handlers';
+import * as physique from './physique';
+import { PINNED_MODEL_ID } from './physiquePrompt';
+import { FirestorePhysiqueRepo } from './physiqueRepo';
 import type { PhotoStore } from './photoStore';
 import { S3PhotoStore } from './s3PhotoStore';
+import { GeminiClient } from './visionModel';
 
 initializeApp();
 
 const awsAccessKeyId = defineSecret('PGYM_AWS_ACCESS_KEY_ID');
 const awsSecretAccessKey = defineSecret('PGYM_AWS_SECRET_ACCESS_KEY');
+/** Gemini API key, paid tier. Secret Manager in production; `.secret.local` (git-ignored) for the emulator. */
+const geminiApiKey = defineSecret('PGYM_GEMINI_API_KEY');
 const s3Bucket = defineString('PGYM_S3_BUCKET');
 const s3Region = defineString('PGYM_S3_REGION', { default: 'us-east-1' });
 /** Empty for AWS; for local work point it at MinIO, for example http://127.0.0.1:9000. */
@@ -45,8 +53,15 @@ function deps(): handlers.Deps {
     now: () => new Date(),
     log: logger,
     enqueuePhysique: async (uid, sessionId) => {
-      // Card B2 adds analyzePhysique and its task queue.
-      logger.info('analyzePhysique not wired yet', { uid, sessionId });
+      try {
+        await getFunctions()
+          .taskQueue('analyzePhysique')
+          .enqueue({ uid, sessionId }, { id: physique.physiqueTaskId(uid, sessionId) });
+      } catch (err) {
+        // The same session queued twice: the first task does the work.
+        if ((err as { code?: string }).code === 'functions/task-already-exists') return;
+        throw err;
+      }
     },
   };
 }
@@ -82,6 +97,30 @@ export const api = onRequest({ secrets: [awsAccessKeyId, awsSecretAccessKey], in
   else res.send(JSON.stringify(out.body));
 });
 
+/**
+ * The physique score. Queued by stampSession, one task per session (the task
+ * ID dedupes). The handler re-checks consent and age, then enforces one
+ * analysis per session and DAILY_LIMIT per user per local day. A storage
+ * error throws so the queue retries; a model error is written as a refusal
+ * and not retried.
+ */
+export const analyzePhysique = onTaskDispatched(
+  {
+    secrets: [awsAccessKeyId, awsSecretAccessKey, geminiApiKey],
+    retryConfig: { maxAttempts: 3, minBackoffSeconds: 30 },
+    rateLimits: { maxConcurrentDispatches: 10 },
+    memory: '512MiB',
+    timeoutSeconds: 120,
+  },
+  async (req) => {
+    const model = PINNED_MODEL_ID ? new GeminiClient({ apiKey: geminiApiKey.value(), modelId: PINNED_MODEL_ID }) : null;
+    await physique.analyzePhysique(
+      { repo: new FirestorePhysiqueRepo(getFirestore()), store: photoStore(), model, now: () => new Date(), log: logger },
+      req.data,
+    );
+  },
+);
+
 /** rollWeek only touches Firestore, so it gets no S3 credentials. */
 const noStore: PhotoStore = {
   presignPut: () => Promise.reject(new Error('no photo store in rollWeek')),
@@ -89,6 +128,7 @@ const noStore: PhotoStore = {
   exists: () => Promise.reject(new Error('no photo store in rollWeek')),
   listKeys: () => Promise.reject(new Error('no photo store in rollWeek')),
   deleteKeys: () => Promise.reject(new Error('no photo store in rollWeek')),
+  getBytes: () => Promise.reject(new Error('no photo store in rollWeek')),
 };
 
 export const rollWeek = onSchedule({ schedule: 'every 60 minutes', timeZone: 'Etc/UTC' }, async () => {

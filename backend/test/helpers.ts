@@ -62,6 +62,13 @@ export class FakePhotoStore implements PhotoStore {
       this.objects.delete(k);
     }
   }
+
+  async getBytes(key: string, maxBytes: number): Promise<Uint8Array> {
+    const size = this.objects.get(key);
+    if (size === undefined) throw new Error(`no such object: ${key}`);
+    if (size > maxBytes) throw new Error('too large');
+    return new Uint8Array(size);
+  }
 }
 
 export const silentLog: Logger = { info: () => undefined, warn: () => undefined };

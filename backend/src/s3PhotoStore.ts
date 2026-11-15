@@ -80,6 +80,17 @@ export class S3PhotoStore implements PhotoStore {
     return keys;
   }
 
+  async getBytes(key: string, maxBytes: number): Promise<Uint8Array> {
+    const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    if (typeof res.ContentLength === 'number' && res.ContentLength > maxBytes) {
+      throw new Error(`object is ${res.ContentLength} bytes, over the ${maxBytes} byte limit`);
+    }
+    if (!res.Body) throw new Error('object has no body');
+    const bytes = await res.Body.transformToByteArray();
+    if (bytes.byteLength > maxBytes) throw new Error(`object is ${bytes.byteLength} bytes, over the ${maxBytes} byte limit`);
+    return bytes;
+  }
+
   async deleteKeys(keys: string[]): Promise<void> {
     for (let i = 0; i < keys.length; i += DELETE_BATCH) {
       const batch = keys.slice(i, i + DELETE_BATCH);
