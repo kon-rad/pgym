@@ -26,7 +26,7 @@ struct SetRowView: View {
         return unit.format(kg: kg)
     }
 
-    private var repsText: String { set.reps.map { String($0) } ?? "" }
+    private var repsText: String { self.set.reps.map { String($0) } ?? "" }
 
     private var lastText: String? {
         guard let w = set.lastWeightKg, let r = set.lastReps else { return nil }
