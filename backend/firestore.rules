@@ -1,0 +1,89 @@
+rules_version = '2';
+
+// PGYM Firestore rules. Data model: pgym-architecture.md, "Data model".
+// A user reads and writes only their own documents. Fields the server owns
+// (timestamps, proof numbers, streak numbers, the physique score) are written
+// only by Cloud Functions, which use the Admin SDK and bypass these rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // users/{uid} fields only the server writes.
+    function serverUserFields() {
+      return ['streakWeeks', 'longestStreak', 'passWeeks', 'proofCount', 'lastProofNumber', 'streakState'];
+    }
+
+    // users/{uid}/sessions/{id} fields only the server writes.
+    function serverSessionFields() {
+      return ['proofNumber', 'stampedAt', 'physique', 'photoKey', 'cardKey', 'newBests'];
+    }
+
+    function writesAny(fields) {
+      return resource == null
+        ? request.resource.data.keys().hasAny(fields)
+        : request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function optional(d, field, check) {
+      return !(field in d) || check;
+    }
+
+    function validUser(d) {
+      return optional(d, 'goalPerWeek', d.get('goalPerWeek', 0) is int && d.get('goalPerWeek', 0) >= 2 && d.get('goalPerWeek', 0) <= 6)
+        && optional(d, 'birthYear', d.get('birthYear', 0) is int && d.get('birthYear', 0) >= 1900 && d.get('birthYear', 0) <= 2100)
+        && optional(d, 'timezone', d.get('timezone', '') is string && d.get('timezone', '').size() <= 64)
+        && optional(d, 'physiqueConsent', d.get('physiqueConsent', false) is bool)
+        && optional(d, 'units', d.get('units', '') in ['kg', 'lb']);
+    }
+
+    function clientSessionStatus(d) {
+      return d.get('status', 'draft') in ['draft', 'finished'];
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && !writesAny(serverUserFields())
+        && validUser(request.resource.data);
+      // Account deletion goes through deleteAccount, which also removes photos.
+      allow delete: if false;
+
+      match /routines/{routineId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /sessions/{sessionId} {
+        allow read: if isOwner(uid);
+        // A stamped session is the proof: the phone cannot change it afterwards.
+        allow create: if isOwner(uid)
+          && !writesAny(serverSessionFields())
+          && clientSessionStatus(request.resource.data);
+        allow update: if isOwner(uid)
+          && resource.data.get('status', 'draft') != 'stamped'
+          && !writesAny(serverSessionFields())
+          && clientSessionStatus(request.resource.data);
+        // Deletion goes through deleteSession, which also removes the S3 objects.
+        allow delete: if false;
+      }
+
+      match /exerciseStats/{exerciseId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // Tokens are made and revoked by functions; the app lists name and prefix.
+      match /agentTokens/{tokenId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    // Written only by the landing site's server route.
+    match /waitlist/{id} {
+      allow read, write: if false;
+    }
+  }
+}
