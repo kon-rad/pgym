@@ -1,5 +1,5 @@
 // Site settings, all from the environment. Nothing account-specific is committed:
-// see web/.env.example for every variable.
+// see "Environment" in web/README.md for every variable.
 
 function clean(value: string | undefined): string {
   return (value ?? '').trim()
