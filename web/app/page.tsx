@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { CallToAction } from '@/components/CallToAction'
-import { CardPhoto, ProofCard, type ProofCardProps } from '@/components/ProofCard'
+import { LoopDemo } from '@/components/LoopDemo'
+import { CardPhoto, ProofCard, type ProofCardProps, type Scene } from '@/components/ProofCard'
 import { site } from '@/lib/site'
 
 // Home. Sections in the order of pgym-landing-pages.md, "Home page sections".
@@ -10,24 +11,42 @@ import { site } from '@/lib/site'
 // example; there are no user counts, ratings or testimonials.
 
 const HERO_CARD: ProofCardProps = {
+  // The sample session from the proof-card template (pgym-card-4x5.svg).
   proof: 42,
-  week: 7,
+  streakWeeks: 7,
   time: 'SUN 15 NOV 2026 · 18:47',
-  name: 'Push A',
+  name: 'Push A: Chest, Shoulders, Triceps',
   sets: 18,
-  kg: '4,820',
-  duration: '52:10',
+  total: '6,240',
+  duration: '1:12',
   filter: 'iron',
   scene: 0,
 }
 
+const BACK_CARD: ProofCardProps = {
+  proof: 41,
+  streakWeeks: 6,
+  time: 'FRI 13 NOV 2026 · 12:05',
+  name: 'Legs',
+  sets: 15,
+  total: '6,105',
+  duration: '0:55',
+  filter: 'plate',
+  scene: 1,
+}
+
+const DEMO_CARD: ProofCardProps = { ...HERO_CARD, proof: 43 }
+
+// Eight cards, two in each filter, so the series effect shows (section 4).
 const EXAMPLE_CARDS: (ProofCardProps & { caption: string })[] = [
-  { proof: 39, week: 6, time: 'MON 09 NOV 2026 · 07:12', name: 'Pull A', sets: 16, kg: '3,940', duration: '48:02', filter: 'iron', scene: 1, caption: 'Iron' },
-  { proof: 40, week: 6, time: 'WED 11 NOV 2026 · 18:30', name: 'Legs', sets: 15, kg: '6,105', duration: '55:41', filter: 'chalk', scene: 0, caption: 'Chalk' },
-  { proof: 41, week: 6, time: 'FRI 13 NOV 2026 · 12:05', name: 'Upper', sets: 20, kg: '4,410', duration: '61:15', filter: 'plate', scene: 2, caption: 'Plate' },
-  { proof: 42, week: 7, time: 'SUN 15 NOV 2026 · 18:47', name: 'Push A', sets: 18, kg: '4,820', duration: '52:10', filter: 'raw', scene: 3, caption: 'Raw' },
-  { proof: 43, week: 7, time: 'TUE 17 NOV 2026 · 06:58', name: 'Pull B', sets: 17, kg: '4,060', duration: '50:33', filter: 'iron', scene: 2, caption: 'Iron' },
-  { proof: 44, week: 7, time: 'THU 19 NOV 2026 · 19:20', name: 'Legs', sets: 14, kg: '6,350', duration: '57:08', filter: 'plate', scene: 1, caption: 'Plate' },
+  { proof: 39, streakWeeks: 6, time: 'MON 09 NOV 2026 · 07:12', name: 'Pull A', sets: 16, total: '3,940', duration: '0:48', filter: 'iron', scene: 1, caption: 'Iron' },
+  { proof: 40, streakWeeks: 6, time: 'WED 11 NOV 2026 · 18:30', name: 'Legs', sets: 15, total: '6,105', duration: '0:55', filter: 'chalk', scene: 0, caption: 'Chalk' },
+  { proof: 41, streakWeeks: 6, time: 'FRI 13 NOV 2026 · 12:05', name: 'Upper', sets: 20, total: '4,410', duration: '1:01', filter: 'plate', scene: 2, caption: 'Plate' },
+  { proof: 42, streakWeeks: 7, time: 'SUN 15 NOV 2026 · 18:47', name: 'Push A', sets: 18, total: '6,240', duration: '1:12', filter: 'raw', scene: 3, caption: 'Raw' },
+  { proof: 43, streakWeeks: 7, time: 'TUE 17 NOV 2026 · 06:58', name: 'Pull B', sets: 17, total: '4,060', duration: '0:50', filter: 'iron', scene: 2, caption: 'Iron' },
+  { proof: 44, streakWeeks: 7, time: 'THU 19 NOV 2026 · 19:20', name: 'Legs', sets: 14, total: '6,350', duration: '0:57', filter: 'plate', scene: 1, caption: 'Plate' },
+  { proof: 45, streakWeeks: 7, time: 'SAT 21 NOV 2026 · 10:14', name: 'Full body', sets: 19, total: '5,215', duration: '1:04', filter: 'chalk', scene: 3, caption: 'Chalk' },
+  { proof: 46, streakWeeks: 8, time: 'MON 23 NOV 2026 · 07:05', name: 'Push B', sets: 16, total: '4,480', duration: '0:46', filter: 'raw', scene: 0, caption: 'Raw' },
 ]
 
 const WEEKS = [
@@ -108,17 +127,20 @@ export default function Home() {
             <CallToAction source="hero" readQuery />
           </div>
           <div className="hero-visual">
-            <div className="phone">
-              <div className="phone-screen">
-                <div className="phone-bar">
-                  <span className="label">Session complete</span>
-                  <span className="label label-plate">Week 7</span>
-                </div>
-                <div style={{ padding: '0 12px' }}>
-                  <ProofCard {...HERO_CARD} animateStamp />
-                </div>
-                <div className="phone-actions" aria-hidden="true">
-                  <span className="fake-btn">Share proof</span>
+            <div className="hero-stack">
+              <ProofCard {...BACK_CARD} className="hero-back" label="" />
+              <div className="phone hero-phone">
+                <div className="phone-screen">
+                  <div className="phone-bar">
+                    <span className="label">Session complete</span>
+                    <span className="label label-plate">Week 7</span>
+                  </div>
+                  <div className="phone-card">
+                    <ProofCard {...HERO_CARD} animateStamp />
+                  </div>
+                  <div className="phone-actions" aria-hidden="true">
+                    <span className="fake-btn">Share proof</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -135,58 +157,7 @@ export default function Home() {
               Three steps. Under a minute after your last set.
             </h2>
           </div>
-          <ol className="steps">
-            <li className="step" data-reveal>
-              <div className="screen" aria-hidden="true">
-                <span className="label">Bench press</span>
-                {[
-                  ['1', '60', '8', true],
-                  ['2', '80', '6', true],
-                  ['3', '80', '6', true],
-                  ['4', '80', '6', false],
-                ].map(([n, kg, reps, done]) => (
-                  <div className="set-row" key={String(n)}>
-                    <span className="n">{n}</span>
-                    <span>
-                      {kg} <span className="unit">KG</span>
-                    </span>
-                    <span>
-                      {reps} <span className="unit">REPS</span>
-                    </span>
-                    <span className={`check${done ? ' done' : ''}`}>
-                      {done ? (
-                        <svg width="14" height="14" viewBox="0 0 14 14">
-                          <path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="#0B0B0C" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : null}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <h3>Log your sets</h3>
-              <p>Last session&apos;s weights are already filled in. One tap per set. Start a session in two taps.</p>
-            </li>
-            <li className="step" data-reveal>
-              <div className="screen" aria-hidden="true">
-                <div className="viewfinder">
-                  <div className="card filter-raw" style={{ position: 'absolute', inset: 0, borderRadius: 0 }}>
-                    <CardPhoto scene={2} />
-                  </div>
-                  <div className="corners" />
-                  <div className="shutter" />
-                </div>
-              </div>
-              <h3>Take one photo</h3>
-              <p>In the app&apos;s own camera, at the gym. No camera roll, so every card is from the day it says.</p>
-            </li>
-            <li className="step" data-reveal>
-              <div className="screen" aria-hidden="true">
-                <ProofCard {...HERO_CARD} small filter="plate" scene={1} label="" />
-              </div>
-              <h3>Get your proof</h3>
-              <p>The server stamps the time and the next proof number. Pick a filter and share it anywhere.</p>
-            </li>
-          </ol>
+          <LoopDemo card={DEMO_CARD} />
         </div>
       </section>
 
@@ -207,7 +178,7 @@ export default function Home() {
             {EXAMPLE_CARDS.map(({ caption, ...card }) => (
               <li key={card.proof}>
                 <figure style={{ margin: 0 }}>
-                  <ProofCard {...card} small />
+                  <ProofCard {...card} />
                   <figcaption className="label">
                     {caption} · Example
                   </figcaption>
@@ -262,8 +233,8 @@ export default function Home() {
               <span className="label">Proof wall · Example</span>
               <div className="wall" aria-hidden="true">
                 {Array.from({ length: 12 }, (_, i) => (
-                  <div className={`thumb card filter-${(['iron', 'chalk', 'plate', 'iron'] as const)[i % 4]}`} key={i}>
-                    <CardPhoto scene={(i % 4) as 0 | 1 | 2 | 3} />
+                  <div className="thumb" key={i}>
+                    <CardPhoto scene={(i % 4) as Scene} filter={(['iron', 'chalk', 'plate', 'iron'] as const)[i % 4]} />
                     <span>#{String(33 + i).padStart(3, '0')}</span>
                   </div>
                 ))}
@@ -374,10 +345,13 @@ export default function Home() {
                 The iPhone app, the server and this site, in one public repository. Read how the proof number is
                 made, or run the whole thing on your laptop.
               </p>
-              <p>
+              <p className="open-links">
                 <a className="btn btn-secondary" href={site.githubUrl}>
                   kon-rad/pgym on GitHub
                 </a>
+                <Link className="arrow-link" href="/open-source">
+                  Open source
+                </Link>
               </p>
             </div>
             <div className="open-card" data-reveal>
@@ -389,6 +363,14 @@ export default function Home() {
               <div className="code" aria-label="Example request">
                 {`curl -H "Authorization: Bearer $PGYM_TOKEN" \\\n  ${site.apiUrl}/v1/stats`}
               </div>
+              <p className="open-links">
+                <Link className="arrow-link" href="/agents">
+                  For your agent
+                </Link>
+                <a className="arrow-link" href="/skill.md">
+                  skill.md
+                </a>
+              </p>
             </div>
           </div>
         </div>

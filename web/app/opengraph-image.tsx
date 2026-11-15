@@ -5,7 +5,7 @@ import { ImageResponse } from 'next/og'
 // The Open Graph image, rendered once at build time from the self-hosted fonts.
 // Satori reads WOFF but not WOFF2, which is why the two .woff files are kept.
 
-export const alt = 'PGYM. Proof of gym. A proof card stamp: PROOF #042, WEEK 7.'
+export const alt = 'PGYM. Proof of gym. A proof card stamp: PROOF #042, 7 WEEKS RUNNING.'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -66,12 +66,12 @@ export default async function OpengraphImage() {
             borderRadius: 14,
             background: IRON,
             color: PLATE,
-            transform: 'rotate(4deg)',
+            transform: 'rotate(-4deg)',
           }}
         >
           <div style={{ fontFamily: 'Mono', fontSize: 30, letterSpacing: 6 }}>PROOF</div>
           <div style={{ fontFamily: 'Anton', fontSize: 120, lineHeight: 1.05 }}>#042</div>
-          <div style={{ fontFamily: 'Mono', fontSize: 26, letterSpacing: 4 }}>WEEK 7</div>
+          <div style={{ fontFamily: 'Mono', fontSize: 26, letterSpacing: 4 }}>7 WEEKS RUNNING</div>
         </div>
       </div>
     ),
