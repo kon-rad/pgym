@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": ".eval-build",
+    "sourceMap": false
+  },
+  "include": ["scripts", "src"]
+}

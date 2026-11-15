@@ -81,7 +81,7 @@ struct RoutinesScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if routines.count > 1 {
                     Button(editMode.isEditing ? "Done" : "Reorder") {
-                        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+                        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
                             editMode = editMode.isEditing ? .inactive : .active
                         }
                     }
@@ -151,7 +151,7 @@ struct RoutinesScreen: View {
     }
 
     private func move(from source: IndexSet, to destination: Int) {
-        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
             try? RoutineStore(context: context).move(fromOffsets: source, toOffset: destination)
         }
         reorderTick += 1
@@ -159,7 +159,7 @@ struct RoutinesScreen: View {
     }
 
     private func delete(_ routine: Routine) {
-        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
             try? RoutineStore(context: context).delete(routine)
         }
         pendingDelete = nil
@@ -167,7 +167,7 @@ struct RoutinesScreen: View {
     }
 
     private func adopt(_ starter: StarterRoutine) {
-        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
             _ = try? RoutineStore(context: context).adopt(starter)
         }
         addedTick += 1

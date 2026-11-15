@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 #if canImport(FirebaseFirestore)
-import FirebaseAuth
 import FirebaseCore
 import FirebaseFirestore
 
@@ -32,20 +31,16 @@ final class FirestoreRoutineRemote: RoutineRemote {
 }
 #endif
 
-/// Wires routine sync to Firebase when Firebase is configured and a user is signed in; otherwise
-/// routines stay on the phone and sync starts by itself once both are true.
+/// Wires routine sync to Firestore when the app runs on the Firebase backend; with the fake auth
+/// backend (fresh clone, CI, UI tests) routines stay on the phone. Sync waits for a signed-in user.
 enum RoutineSyncSetup {
     @MainActor
-    static func configure(container: ModelContainer) {
+    static func configure(container: ModelContainer, useFirestore: Bool, uid: @escaping @MainActor () -> String?) {
         #if canImport(FirebaseFirestore)
-        let firebaseOn = FirebaseApp.app() != nil
-        RoutineSyncCoordinator.shared.configure(
-            container: container,
-            remote: firebaseOn ? FirestoreRoutineRemote() : nil,
-            uid: { FirebaseApp.app() != nil ? Auth.auth().currentUser?.uid : nil }
-        )
+        let remote: RoutineRemote? = useFirestore && FirebaseApp.app() != nil ? FirestoreRoutineRemote() : nil
         #else
-        RoutineSyncCoordinator.shared.configure(container: container, remote: nil, uid: { nil })
+        let remote: RoutineRemote? = nil
         #endif
+        RoutineSyncCoordinator.shared.configure(container: container, remote: remote, uid: uid)
     }
 }

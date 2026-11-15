@@ -6,13 +6,16 @@ final class RoutinesUITests: XCTestCase {
     }
 
     /// F1 to F2, add a starter from the empty state, open it in F3, open D3 and search.
+    /// The UI-test launch argument signs in a fake user and gives an empty in-memory store.
     @MainActor
     func testStarterToEditorToAddExercise() {
         let app = XCUIApplication()
-        app.launchArguments.append("-pgym-ui-testing")
+        app.launchArguments = ["-pgym-ui-test-signed-in"]
         app.launch()
 
-        app.tabBars.firstMatch.buttons["Profile"].tap()
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 10), "no tab bar after launch")
+        tabBar.buttons["Profile"].tap()
         let routinesLink = app.buttons["profile.routines"]
         XCTAssertTrue(routinesLink.waitForExistence(timeout: 5))
         routinesLink.tap()

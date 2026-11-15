@@ -86,7 +86,7 @@ struct StarterRoutinePicker: View {
 
                 ForEach(StarterRoutine.all) { starter in
                     Button {
-                        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) { selection = starter }
+                        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { selection = starter }
                     } label: {
                         StarterRoutineCard(
                             starter: starter,

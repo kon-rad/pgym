@@ -1,4 +1,8 @@
 lib/
+.eval-build/
+# Eval photos and reports stay on the machine that ran them.
+eval-photos/
+eval-*.json
 .secret.local
 .runtimeconfig.json
 *-debug.log

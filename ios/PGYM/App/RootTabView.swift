@@ -2,7 +2,7 @@ import DesignSystem
 import SwiftUI
 
 /// The three tabs from pgym-app-views.md, "Navigation". A session (D) will run full screen
-/// over this shell; sign-in (A) and onboarding (B) will gate it. Both come in later cards.
+/// over this shell. Sign-in (A) gates it through `AppRootView`; onboarding (B) is card I3.
 enum AppTab: String, CaseIterable, Identifiable {
     case today, progress, profile
 
@@ -65,6 +65,8 @@ struct RootTabView_Previews: PreviewProvider {
     static var previews: some View {
         let _ = FontRegistry.registerAll()
         RootTabView()
+            .environment(AppSession(dependencies: .fake()))
+            .environment(NetworkMonitor(fixed: true))
             .modelContainer(Models.makeContainer(inMemory: true))
             .preferredColorScheme(.dark)
     }

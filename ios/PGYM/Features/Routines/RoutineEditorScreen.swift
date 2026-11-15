@@ -72,7 +72,7 @@ struct RoutineEditorScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if draft.exercises.count > 1 {
                     Button(editMode.isEditing ? "Done" : "Reorder") {
-                        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+                        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
                             editMode = editMode.isEditing ? .inactive : .active
                         }
                     }
@@ -102,7 +102,7 @@ struct RoutineEditorScreen: View {
         }
         .sheet(isPresented: $showAddExercise) {
             AddExerciseSheet { exercise in
-                withAnimation(.pgymSpring(reduceMotion: reduceMotion)) { draft.add(exercise) }
+                withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { draft.add(exercise) }
                 addTick += 1
             }
         }
@@ -179,7 +179,7 @@ struct RoutineEditorScreen: View {
                     }
             }
             .onMove { source, destination in
-                withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+                withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
                     draft.exercises.moveElements(fromOffsets: source, toOffset: destination)
                 }
             }
@@ -203,7 +203,7 @@ struct RoutineEditorScreen: View {
     // MARK: Actions
 
     private func remove(_ id: UUID) {
-        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
             draft.exercises.removeAll { $0.id == id }
         }
     }

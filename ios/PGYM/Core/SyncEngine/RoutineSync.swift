@@ -257,11 +257,11 @@ final class RoutineSyncCoordinator {
 
     private var container: ModelContainer?
     private var engine: RoutineSyncEngine?
-    private var uidProvider: () -> String? = { nil }
+    private var uidProvider: @MainActor () -> String? = { nil }
     private var running = false
     private var again = false
 
-    func configure(container: ModelContainer, remote: RoutineRemote?, uid: @escaping () -> String?) {
+    func configure(container: ModelContainer, remote: RoutineRemote?, uid: @escaping @MainActor () -> String?) {
         self.container = container
         self.engine = remote.map(RoutineSyncEngine.init(remote:))
         self.uidProvider = uid

@@ -93,7 +93,7 @@ describe('agent API: authentication', () => {
 
   it.each([
     ['not a bearer header', 'Basic abc'],
-    ['wrong prefix', 'Bearer ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ['wrong prefix', `Bearer ghp_${'a'.repeat(40)}`],
     ['too short', 'Bearer pgym_pat_abc'],
     ['bad characters', `Bearer pgym_pat_${'-'.repeat(40)}`],
     ['empty bearer', 'Bearer '],

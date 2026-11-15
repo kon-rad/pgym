@@ -144,10 +144,3 @@ extension View {
             .listRowInsets(EdgeInsets(top: top, leading: Spacing.screenMargin, bottom: bottom, trailing: Spacing.screenMargin))
     }
 }
-
-/// Spring for state changes, or none with Reduce Motion. Well under the 600 ms ceiling.
-extension Animation {
-    static func pgymSpring(reduceMotion: Bool) -> Animation? {
-        reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.82)
-    }
-}
