@@ -7,6 +7,8 @@ import {
   readDoc,
   renderMarkdown,
   skillFile,
+  slugify,
+  splitSections,
   stripComments,
   stripTitle,
 } from '@/lib/content'
@@ -85,6 +87,53 @@ describe('site pages', () => {
     const posts = listPosts()
     const post = posts.find((p) => p.slug === 'why-proof-of-gym')
     expect(post).toMatchObject({ title: 'Why proof of gym', author: 'PGYM', date: null })
+  })
+})
+
+describe('document sections', () => {
+  it('splits at ## headings, not inside fenced code, with unique anchors', () => {
+    const { intro, sections } = splitSections(
+      'Intro line.\n\n## What we collect\n\nA\n\n```md\n## not a heading\n```\n\n## What we collect\n\nB\n',
+    )
+    expect(intro).toContain('Intro line.')
+    expect(sections.map((s) => s.id)).toEqual(['what-we-collect', 'what-we-collect-2'])
+    expect(sections[0].html).toContain('## not a heading')
+  })
+
+  it('makes anchors from headings', () => {
+    expect(slugify("The physique score and Google's Gemini")).toBe('the-physique-score-and-google-s-gemini')
+    expect(slugify('1. What PGYM is')).toBe('1-what-pgym-is')
+  })
+})
+
+describe('legal drafts', () => {
+  it.each([
+    ['privacy.md', 'Privacy policy', ['What we collect', 'What we do not collect', "The physique score and Google's Gemini", 'Deleting your data', 'Age']],
+    ['terms.md', 'Terms of use', ['1. What PGYM is', '6. No medical advice', '7. The physique score is an AI estimate', '8. What a proof number means', '15. Contact']],
+  ])('%s carries the draft text in sections', (file, title, headings) => {
+    const page = loadPage(file)
+    expect(page.title).toBe(title)
+    expect(page.meta.updated).toBe('2026-11-15')
+    const titles = page.sections.map((s) => s.title)
+    for (const h of headings) expect(titles).toContain(h)
+    expect(page.html).not.toContain('[[')
+    expect(page.html).not.toContain('<!--')
+  })
+
+  it('keeps unfilled placeholders visible instead of inventing values', () => {
+    const { body } = readDoc('privacy.md', NONE)
+    expect(body).toContain('[COMPANY], [ADDRESS], [EMAIL]')
+    expect(fillPlaceholders('[COMPANY], [ADDRESS]', { ...NONE, company: 'Example Ltd', address: '1 Main St' })).toBe(
+      'Example Ltd, 1 Main St',
+    )
+  })
+
+  it('names the confirmed MIT licence, and no content file calls it proposed', () => {
+    expect(readDoc('terms.md', NONE).body).toContain('The licence is MIT.')
+    for (const file of ['agents.md', 'guide.md', 'open-source.md', 'privacy.md', 'skill.md', 'terms.md', 'blog/why-proof-of-gym.md']) {
+      const { body } = readDoc(file, NONE)
+      expect(body, file).not.toMatch(/MIT[^.\n]*proposed|proposed[^.\n]*MIT|not yet confirmed/i)
+    }
   })
 })
 

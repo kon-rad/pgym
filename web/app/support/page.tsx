@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { PageHead, SupportEmail } from '@/components/PageHead'
-import { site } from '@/lib/site'
+import { SupportEmail } from '@/components/PageHead'
+import { displayHost, mailto, site } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Support',
@@ -10,110 +10,93 @@ export const metadata: Metadata = {
   alternates: { canonical: '/support' },
 }
 
-// Answers use the app's own screen and button names from pgym-app-copy.md.
+// Copy: pgym-landing-copy.md, "Support page (/support)", word for word.
+// [PLACEHOLDER: domain] prints as [DOMAIN] until NEXT_PUBLIC_SITE_URL is set;
+// the support email, company name and postal address likewise.
 
-const QUESTIONS: { q: string; a: ReactNode }[] = [
+function SiteUrl({ path }: { path: string }) {
+  return <Link href={path}>{`https://${displayHost()}${path}`}</Link>
+}
+
+const SUPPORT_QUESTIONS: { q: string; a: ReactNode }[] = [
   {
-    q: 'How do I start a session?',
-    a: (
-      <p>
-        On Today, tap Start session. Your next routine opens with last session&apos;s weights already filled in. Tap
-        the check on each set; change the weight or reps only when they change.
-      </p>
-    ),
+    q: 'I cannot sign in.',
+    a: 'Check you are using the same method you signed up with: Apple, Google or email. If you used email, tap Forgot password on the sign-in screen and we send a reset link.',
   },
   {
-    q: 'Why can I not pick a photo from my library?',
-    a: (
-      <p>
-        The proof photo comes from the camera inside PGYM only. That is what makes the card proof: the photo was
-        taken in the session, and the time and number are set by our server, not the phone.
-      </p>
-    ),
+    q: 'My proof says pending.',
+    a: 'The card was made without a connection. It is stamped with the server time and your proof number as soon as your phone is back online. Keep the app open for a moment once you have signal.',
   },
   {
-    q: 'The time on my card is not the time on my phone.',
-    a: (
-      <p>
-        The card shows the time our server received the photo, in your time zone. If you were offline, the card
-        shows a pending stamp until it syncs, then the server time replaces it. A session started before midnight
-        counts for the day it started.
-      </p>
-    ),
+    q: 'How do I delete a session?',
+    a: 'Open Progress, tap the card, then Delete. The photo and the card are removed, and your counts are recalculated.',
   },
   {
-    q: 'How does the streak count?',
-    a: (
-      <p>
-        In weeks. Hit your weekly goal and the streak moves. Rest days never break it. Every four weeks you hit earns
-        a pass week, used for you automatically. A session counts once it has at least one logged set and a proof
-        photo.
-      </p>
-    ),
+    q: 'How do I turn off the physique score?',
+    a: 'Profile, then Privacy and data, then turn off Physique analysis. Every stored score is deleted.',
   },
   {
-    q: 'How do I turn the physique score on or off?',
-    a: (
-      <p>
-        Profile, then Privacy and data, then Physique score. It needs you to be 18 or older. Turning it off deletes
-        every stored score and tip; your photos and proofs stay.
-      </p>
-    ),
+    q: 'I am not getting reminders.',
+    a: 'Check that notifications for PGYM are on in iOS Settings. PGYM sends one reminder on each gym day you picked, at your time, and none once the session is logged. After 5 reminders in a row go unopened it drops to one a week.',
   },
   {
-    q: 'Why is there no score for one session?',
-    a: (
-      <p>
-        The analysis skips photos it cannot read fairly: no person in frame, more than one person, face only, too
-        dark, or anyone who looks under 18. The session still counts.
-      </p>
-    ),
-  },
-  {
-    q: 'How do I give my AI agent access, or take it back?',
-    a: (
-      <p>
-        Profile, then Agent access. Make a token, choose what it can read, and paste it into your agent. Revoke it on
-        the same screen; it stops working at once.
-      </p>
-    ),
+    q: 'How do I get a copy of my data?',
+    a: 'Profile, then Privacy and data, then Export my data.',
   },
   {
     q: 'How do I delete my account?',
     a: (
-      <p>
-        In the app: Profile, then Privacy and data, then Delete account. Without the app, see{' '}
-        <Link href="/delete-account">Delete your account</Link>.
-      </p>
+      <>
+        Profile, then Privacy and data, then Delete account. It removes your photos, cards, sessions and sign-in. If you
+        no longer have the app, use the form at <SiteUrl path="/delete-account" />
+      </>
     ),
   },
 ]
 
 export default function SupportPage() {
+  const mail = mailto('PGYM support')
   return (
-    <div className="page">
-      <div className="wrap">
-        <PageHead label="Support" title="Support">
-          <p className="lede">
-            Write to <SupportEmail subject="PGYM support" />. A person reads every message.
-          </p>
-        </PageHead>
-        <div className="faq">
-          {QUESTIONS.map((item) => (
-            <details key={item.q}>
-              <summary>{item.q}</summary>
-              <div>{item.a}</div>
-            </details>
-          ))}
-        </div>
-        <div className="prose" style={{ marginTop: 40 }}>
-          <h2>Found a bug?</h2>
+    <div className="doc">
+      <div className="wrap support-grid">
+        <header className="support-contact">
+          <h1 className="doc-title">Support</h1>
           <p>
-            PGYM is open source. You can report a bug on <a href={`${site.githubUrl}/issues`}>GitHub</a>. For a
-            security problem, please do not open a public issue; use{' '}
-            <a href={`${site.githubUrl}/security/advisories/new`}>private reporting on GitHub</a> or email{' '}
-            <SupportEmail subject="Security" />.
+            Email <SupportEmail subject="PGYM support" /> and we will get back to you. If something is not working, tell
+            us which iPhone and iOS version you have, and what you tapped before it happened.
           </p>
+          {mail ? (
+            <a className="btn btn-secondary btn-block" href={mail}>
+              {site.supportEmail}
+            </a>
+          ) : null}
+        </header>
+
+        <div className="support-questions">
+          <h2 className="doc-h2">Common questions</h2>
+          <div className="faq">
+            {SUPPORT_QUESTIONS.map((item) => (
+              <details key={item.q}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+
+          <div className="prose support-foot">
+            <p>
+              Found a security problem? Do not send the details by plain email. See <SiteUrl path="/open-source" /> for
+              how to report it privately.
+            </p>
+            <p>
+              PGYM is made by {site.operator}, {site.address}.
+            </p>
+            <p>
+              Privacy policy: <SiteUrl path="/privacy" />
+              <br />
+              Terms of use: <SiteUrl path="/terms" />
+            </p>
+          </div>
         </div>
       </div>
     </div>

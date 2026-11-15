@@ -23,8 +23,11 @@ describe('launch flag', () => {
     const { cta, header } = await render({ NEXT_PUBLIC_APP_LIVE: '', NEXT_PUBLIC_APP_STORE_URL: '' })
     expect(cta).toContain('action="/api/waitlist"')
     expect(cta).toContain('value="hero"')
-    expect(cta).not.toContain('App Store')
+    // The form note names the App Store in its copy; the badge itself must not be there.
+    expect(cta).not.toContain('store-badge')
+    expect(cta).not.toContain('Download on the')
     expect(header).toContain('Join the waitlist')
+    expect(header).not.toContain('btn-primary')
   })
 
   it('shows the App Store badge when the flag is on and a URL is set', async () => {

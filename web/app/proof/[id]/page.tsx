@@ -18,16 +18,16 @@ export default function ProofPage() {
   return (
     <div className="center-page">
       <div className="wrap center-grid">
-        <div className="hero-copy">
+        <div className="center-copy">
           <span className="label label-plate">Coming soon</span>
-          <h1 className="display display-l">Shared proofs open here soon.</h1>
-          <p className="lede">
+          <h1 className="display display-h2">Shared proofs open here soon.</h1>
+          <p className="lead">
             When someone shares a PGYM card as a link, it will show up on this page. For now cards travel as images,
             straight from the app.
           </p>
           <CallToAction source="proof" />
         </div>
-        <div className="hero-visual center-card">
+        <div className="center-card">
           <ProofCard
             proof={1}
             streakWeeks={0}

@@ -1,124 +1,50 @@
-import { CardPhoto, ProofCard, type ProofCardProps } from './ProofCard'
+import { CameraScreen, CompleteScreen, Phone, SessionScreen } from './AppScreens'
+import type { ProofCardProps } from './ProofCard'
 
-// The home page's "log, photo, card" sequence: one phone that plays the loop in
-// 9 seconds (sets check off, the shutter fires, the card is stamped), with the
-// three steps beside it lighting up in time. CSS only, no JavaScript: every
-// element shares one 9 s timeline (see "Loop demo" in globals.css). Each change
-// between screens takes 270 ms; the stamp landing is the one longer moment.
-// It waits until it scrolls into view, and with Reduce Motion it is a still
-// picture of the finished card.
+// "The loop" (pgym-landing-design.md 2.3), with the home page's log, photo, card
+// sequence played across its three frames. Each step is a frame (frameS at
+// 390 px, frameM from 768 px), then its number, its line and one sentence;
+// stacked on a phone, three columns on desktop.
+//
+// The sequence is CSS only, one 9 s timeline shared by every animated part (see
+// "Loop sequence" in globals.css): 0 to 3 s the sets check off, 3 to 5.5 s the
+// shutter fires, 5.5 to 9 s the card is stamped. The step being played gets a
+// Plate frame edge. It waits until it scrolls into view, and with Reduce Motion
+// it is a still: every set checked, the card stamped.
 
+/** Copy: pgym-landing-copy.md, section 3, word for word. */
 export const LOOP_STEPS = [
   {
-    title: 'Log your sets',
-    body: "Last session's weights are already filled in. One tap per set. Start a session in two taps.",
+    title: 'Log your sets.',
+    body: "Tap the check on each set. Last session's weights are already filled in, so a normal set is one tap.",
+    label: 'An animation of the loop, step 1 of 3: the active session: three sets checked off, the fourth to go, the rest timer running.',
   },
   {
-    title: 'Take one photo',
-    body: "In the app's own camera, at the gym. No camera roll, so every card is from the day it says.",
+    title: 'Take one photo.',
+    body: 'At the end, tap Finish and take proof. The photo comes from the PGYM camera, never from your camera roll.',
+    label: 'An animation of the loop, step 2 of 3: the PGYM camera pointed at a barbell, with the shutter button.',
   },
   {
-    title: 'Get your proof',
-    body: 'The server stamps the time and the next proof number. Pick a filter and share it anywhere.',
+    title: 'Get your proof.',
+    body: 'Pick a filter and tap Stamp it. Our server adds the time and your proof number. Share it wherever you already post.',
+    label: 'An animation of the loop, step 3 of 3: the session complete screen: the card stamped proof #043, week 7 locked, a new best on bench press.',
   },
 ] as const
 
-const SETS: [n: string, kg: string, reps: string][] = [
-  ['1', '60', '8'],
-  ['2', '80', '6'],
-  ['3', '80', '6'],
-]
-
-function Tick() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <path
-        d="M2.5 7.5 5.5 10.5 11.5 3.5"
-        fill="none"
-        stroke="#0B0B0C"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
 export function LoopDemo({ card }: { card: ProofCardProps }) {
+  const screens = [<SessionScreen key="log" />, <CameraScreen key="photo" />, <CompleteScreen key="card" card={card} />]
   return (
-    <div className="loop" data-reveal>
-      <figure
-        className="loop-phone phone"
-        role="img"
-        aria-label="An animation of the loop: three sets are checked off, the in-app camera takes one photo, and the proof card is stamped with its number."
-      >
-        <div className="phone-screen loop-screen" aria-hidden="true">
-          <div className="loop-frame ld-frame-log">
-            <div className="loop-bar">
-              <span className="label">Push A</span>
-              <span className="label">18:02</span>
-            </div>
-            <span className="loop-exercise">Bench press</span>
-            {SETS.map(([n, kg, reps], i) => (
-              <div className="set-row" key={n}>
-                <span className="n">{n}</span>
-                <span>
-                  {kg} <span className="unit">KG</span>
-                </span>
-                <span>
-                  {reps} <span className="unit">REPS</span>
-                </span>
-                <span className={`check ld-check ld-check-${i + 1}`}>
-                  <Tick />
-                </span>
-              </div>
-            ))}
-            <div className="set-row">
-              <span className="n">4</span>
-              <span>
-                80 <span className="unit">KG</span>
-              </span>
-              <span>
-                6 <span className="unit">REPS</span>
-              </span>
-              <span className="check" />
-            </div>
-            <span className="fake-btn loop-cta">Finish and take proof</span>
-          </div>
-
-          <div className="loop-frame ld-frame-photo">
-            <div className="viewfinder loop-viewfinder">
-              <CardPhoto scene={0} />
-              <div className="corners" />
-              <div className="ld-flash" />
-            </div>
-            <div className="loop-shutter-row">
-              <span className="label">Photo</span>
-              <span className="shutter ld-shutter" />
-              <span className="label">3s</span>
-            </div>
-          </div>
-
-          <div className="loop-frame ld-frame-card">
-            <ProofCard {...card} label="" />
-            <span className="fake-btn">Share proof</span>
-          </div>
-        </div>
-      </figure>
-
-      <ol className="loop-steps">
-        {LOOP_STEPS.map((step, i) => (
-          <li className={`loop-step ld-step-${i + 1}`} key={step.title}>
-            <span className="loop-step-n" aria-hidden="true">
-              {i + 1}
-            </span>
-            <div>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
+    <ol className="loop" data-reveal>
+      {LOOP_STEPS.map((step, i) => (
+        <li className={`loop-step ld-step-${i + 1}`} key={step.title}>
+          <Phone size="s" desktop="m" label={step.label} className="loop-phone">
+            {screens[i]}
+          </Phone>
+          <span className="label loop-n">{String(i + 1).padStart(2, '0')}</span>
+          <h3 className="loop-title">{step.title}</h3>
+          <p>{step.body}</p>
+        </li>
+      ))}
+    </ol>
   )
 }

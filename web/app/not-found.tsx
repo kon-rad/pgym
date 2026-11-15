@@ -7,23 +7,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 }
 
+// pgym-landing-design.md 8, "/404": H1 "NO PROOF HERE." on one line, 44 px on a
+// phone and 72 px centred on desktop, and a text link home.
 export default function NotFound() {
   return (
     <div className="center-page">
-      <div className="wrap center-grid">
-        <div className="hero-copy">
-          <span className="label label-plate">404</span>
-          <h1 className="display display-l">No proof of this page.</h1>
-          <p className="lede">The link may be old, or the address has a typo. The rest of the site is still here.</p>
-          <Link className="btn btn-primary" href="/">
-            Back to PGYM
-          </Link>
-        </div>
-        <div className="hero-visual">
-          <div style={{ transform: 'scale(2.2)', padding: 40 }}>
-            <Stamp top="PROOF" big="#404" bottom="NOT FOUND" animate />
-          </div>
-        </div>
+      <div className="wrap not-found">
+        <Stamp top="PROOF" big="#404" bottom="NOT FOUND" animate />
+        <h1 className="display display-h2">No proof here.</h1>
+        <Link className="arrow-link" href="/">
+          Back to PGYM
+        </Link>
       </div>
     </div>
   )

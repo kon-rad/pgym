@@ -4,10 +4,6 @@ description: "PGYM's code is public. Read it, run it locally, contribute, and re
 path: /open-source
 ---
 
-
-
-> **Note:** the licence is shown as MIT. MIT is proposed and not yet confirmed. Remove this line once it is.
-
 # Open source
 
 PGYM is open source. The iPhone app, the server code and this website are in one public repository:

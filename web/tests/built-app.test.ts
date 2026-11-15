@@ -145,6 +145,69 @@ describe('built app', () => {
     expect(html).toContain('href="/agents"')
   })
 
+  it('home page carries the final landing copy (pgym-landing-copy.md)', async () => {
+    const html = (await (await fetch(`${base}/`)).text()).replace(/&#x27;|&#39;/g, "'")
+    for (const line of [
+      'Log your sets. Take one photo. Get your proof.',
+      'iPhone only. Not out yet.',
+      'How it works',
+      'Every session, numbered.',
+      'Iron. Chalk. Plate. Raw.',
+      'A streak that counts weeks.',
+      'Watch it add up.',
+      'Private by default.',
+      'Proof #001 is waiting',
+      'Built in the open.',
+      'The code is on GitHub.',
+      'Your agent can read your training.',
+      '<title>PGYM: Proof of gym for your iPhone</title>',
+    ]) {
+      expect(html, line).toContain(line)
+    }
+    const questions = [...html.matchAll(/<summary>([^<]+)<\/summary>/g)].map((m) => m[1])
+    expect(questions).toEqual([
+      'Is it free?',
+      'Which phones does it work on?',
+      'What happens to my photos?',
+      'How is the physique score made?',
+      'What counts as a proof?',
+      'What if I miss a week?',
+      'Does it work without signal?',
+      'Can I see the code?',
+    ])
+  })
+
+  it('home page has the nav button only as an outline, and the hero form keeps the one Plate action', async () => {
+    const html = await (await fetch(`${base}/`)).text()
+    const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'))
+    expect(header).toContain('btn btn-secondary nav-btn')
+    expect(header).not.toContain('btn-primary')
+    expect(html).toContain('id="hero-email"')
+  })
+
+  it('/privacy sets the photo and AI section apart and lists its contents', async () => {
+    const html = await (await fetch(`${base}/privacy`)).text()
+    expect(html).toContain('<section id="the-physique-score-and-google-s-gemini" class="doc-box"')
+    expect(html).toContain('<nav class="doc-toc" aria-label="Contents">')
+    expect(html).toContain('Last updated 2026-11-15')
+  })
+
+  it('/support carries the support copy', async () => {
+    const html = await (await fetch(`${base}/support`)).text()
+    for (const q of ['I cannot sign in.', 'My proof says pending.', 'How do I get a copy of my data?', 'Found a security problem?']) {
+      expect(html).toContain(q)
+    }
+    expect(html).toContain('https://[DOMAIN]/delete-account')
+  })
+
+  it('/open-source and /terms name the MIT licence without calling it proposed', async () => {
+    for (const path of ['/open-source', '/terms']) {
+      const html = await (await fetch(base + path)).text()
+      expect(html).toContain('MIT')
+      expect(html).not.toMatch(/proposed and not yet confirmed|MIT is proposed/)
+    }
+  })
+
   it('home page copy stays positive', async () => {
     const html = (await (await fetch(`${base}/`)).text()).toLowerCase()
     for (const phrase of ['broke your streak', 'break your streak', 'lost your streak', "don't break", 'you failed', 'shame']) {
@@ -209,13 +272,13 @@ describe('built app', () => {
   it('an unknown path returns 404 with the designed not-found page', async () => {
     const res = await fetch(`${base}/no-such-page`)
     expect(res.status).toBe(404)
-    expect(await res.text()).toContain('No proof of this page.')
+    expect(await res.text()).toContain('No proof here.')
   })
 
   it('/404 itself renders the not-found page with status 404', async () => {
     const res = await fetch(`${base}/404`)
     expect(res.status).toBe(404)
-    expect(await res.text()).toContain('No proof of this page.')
+    expect(await res.text()).toContain('No proof here.')
   })
 
   it('the waitlist route validates before it touches the store', async () => {

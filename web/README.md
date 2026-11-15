@@ -30,7 +30,7 @@ built-app test starts the server with no Firebase credentials.
 | Path | What |
 |---|---|
 | `/` | Landing page with the waitlist form (or the App Store badge) |
-| `/privacy`, `/terms` | Plain-language drafts, to be reviewed before launch |
+| `/privacy`, `/terms` | The privacy policy and terms drafts from `content/privacy.md` and `content/terms.md`, under a visible "DRAFT, not reviewed by a lawyer" line |
 | `/support`, `/delete-account` | Contact, common questions, account deletion |
 | `/proof/[id]` | Reserved for shared proofs (v1.1); a coming-soon page for now |
 | `/guide` | How to use PGYM, from `content/guide.md` |
@@ -51,7 +51,8 @@ one needs a rebuild; the rest are read at request time.
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | Canonical URL for Open Graph, sitemap, robots (`https://[DOMAIN]`) | `http://localhost:3000` |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | Support address on every page | `[EMAIL]` placeholder, no link |
-| `NEXT_PUBLIC_OPERATOR_NAME` | Legal name in the footer and legal pages | `PGYM` |
+| `NEXT_PUBLIC_OPERATOR_NAME` | Legal name in the footer, support page and legal pages (`[COMPANY]`) | `[COMPANY]` placeholder |
+| `NEXT_PUBLIC_OPERATOR_ADDRESS` | Postal address on the support page and legal pages (`[ADDRESS]`) | `[ADDRESS]` placeholder |
 | `NEXT_PUBLIC_API_URL` | Agent API host in the example request | `https://[API-DOMAIN]` |
 | `NEXT_PUBLIC_APP_LIVE` | The launch flag, `true` to switch on | Waitlist |
 | `NEXT_PUBLIC_APP_STORE_URL` | App Store link; the flag needs it | Waitlist |
@@ -73,18 +74,27 @@ layout; replace it with Apple's official badge artwork before launch.
 `content/*.md` are the site copy from the PGYM notes, copied unchanged except
 that the vault-only HTML comments are removed. Each has `title`, `description`
 and `path` frontmatter; posts add `slug`, `author` and `date` (`[PUBLISH-DATE]`
-shows as "Draft"). `[DOMAIN]`, `[API-DOMAIN]` and `[EMAIL]` are filled at build
-time from `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_URL` and
-`NEXT_PUBLIC_SUPPORT_EMAIL` when those are set, and stay as placeholders when
-not. Raw HTML in the markdown is shown as text, never rendered.
+shows as "Draft"). `[DOMAIN]`, `[API-DOMAIN]`, `[EMAIL]`, `[COMPANY]` and `[ADDRESS]` are filled
+at build time from `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_URL`,
+`NEXT_PUBLIC_SUPPORT_EMAIL`, `NEXT_PUBLIC_OPERATOR_NAME` and
+`NEXT_PUBLIC_OPERATOR_ADDRESS` when those are set, and stay as placeholders when
+not. `privacy.md` and `terms.md` are Part 1 of the vault's legal drafts; their
+bracketed italic notes for counsel stay visible until a lawyer has reviewed them.
+Pages render through one document template (`components/DocPage.tsx`): pages
+with four or more `##` sections get a contents list.
+
+The home page copy is `pgym-landing-copy.md`, word for word, in `app/page.tsx`,
+`components/LoopDemo.tsx`, `app/support/page.tsx` and `lib/waitlist/messages.ts`. Raw HTML in the markdown is shown as text, never rendered.
 
 ## Proof card and motion
 
 `components/ProofCard.tsx` draws the card from the 4:5 template
 (`pgym-card-4x5.svg`) at its own 1080 x 1350 coordinates, with the four filters
 as SVG filter chains on the photo only. The photo is an illustration of gym
-equipment, never a person. `components/LoopDemo.tsx` is the home page's
-log, photo, card sequence: CSS only, one 9 s timeline, paused until it scrolls
+equipment, never a person. `components/AppScreens.tsx` draws the app screens
+(D2, D7, D8, D11, E1, E2) in HTML inside CSS phone frames, until the simulator
+screenshots exist. `components/LoopDemo.tsx` is the home page's log, photo, card
+sequence across three frames: CSS only, one 9 s timeline, paused until it scrolls
 into view. With `prefers-reduced-motion: reduce`, every animation and hover
 movement is off, the stamp fades in over 150 ms, and the sequence is a still of
 the finished card.
