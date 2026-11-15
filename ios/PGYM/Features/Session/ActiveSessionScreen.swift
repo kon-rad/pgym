@@ -508,7 +508,7 @@ struct ActiveSessionScreen: View {
         keypad = KeypadState(setID: set.id, field: field, text: text)
     }
 
-    private func set(id: String) -> SessionSet? {
+    private func findSet(id: String) -> SessionSet? {
         session.exercises.lazy.flatMap(\.sets).first { $0.id == id }
     }
 
@@ -520,7 +520,7 @@ struct ActiveSessionScreen: View {
     }
 
     private func write(_ state: KeypadState) {
-        guard state.isEdited, let set = set(id: state.setID) else { return }
+        guard state.isEdited, let set = findSet(id: state.setID) else { return }
         switch state.field {
         case .weight: act(setID: set.id) { try store.setWeight(state.weightKg(unit: unit), for: set) }
         case .reps: act(setID: set.id) { try store.setReps(state.reps, for: set) }
@@ -528,7 +528,7 @@ struct ActiveSessionScreen: View {
     }
 
     private func switchKeypadField() {
-        guard let state = keypad, let set = set(id: state.setID) else { return }
+        guard let state = keypad, let set = findSet(id: state.setID) else { return }
         write(state)
         keypad = nil
         openKeypad(set, field: state.field == .weight ? .reps : .weight)
@@ -536,7 +536,7 @@ struct ActiveSessionScreen: View {
 
     /// Log set on the keypad: commits both cells, checks the row, closes the keypad, starts the rest.
     private func logFromKeypad() {
-        guard let state = keypad, let set = set(id: state.setID) else { return }
+        guard let state = keypad, let set = findSet(id: state.setID) else { return }
         keypad = nil
         write(state)
         if set.weightKg == nil {
