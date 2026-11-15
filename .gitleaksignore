@@ -1,0 +1,3 @@
+# Fake token in a test fixture (40 x 'a' after a GitHub-style prefix). Not a credential; the line was rewritten afterwards.
+b3d308f75714351ba137adc3836e6b46db1a8075:backend/test/api.test.ts:github-pat:96
+f252d570c705f322806e56d277da6fbaacb06bde:backend/test/api.test.ts:github-pat:96
