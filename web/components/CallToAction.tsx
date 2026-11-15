@@ -1,10 +1,13 @@
-import Link from 'next/link'
 import { site } from '@/lib/site'
+import { HeaderButton } from './HeaderButton'
 import { WaitlistForm } from './WaitlistForm'
 
 // The one launch flag (NEXT_PUBLIC_APP_LIVE, see lib/site.ts) decides what every
 // call to action on the site is: the waitlist form before launch, the App Store
-// badge after.
+// badge after. It is read at build time, so nothing swaps after the page loads.
+
+/** The hero form's email field; the nav button scrolls to it and focuses it. */
+export const HERO_EMAIL_ID = 'hero-email'
 
 function AppleGlyph() {
   return (
@@ -30,23 +33,22 @@ export function AppStoreBadge() {
   )
 }
 
-export function CallToAction({ source, readQuery }: { source: string; readQuery?: boolean }) {
+export function CallToAction({ source, readQuery, inputId }: { source: string; readQuery?: boolean; inputId?: string }) {
   if (site.appLive) return <AppStoreBadge />
-  return <WaitlistForm source={source} readQuery={readQuery} />
+  return <WaitlistForm source={source} readQuery={readQuery} inputId={inputId} />
 }
 
-/** The small button in the header. */
+/**
+ * The nav button, from 768 px only (pgym-landing-design.md 2.1): outlined, never
+ * Plate, so the hero form stays the one Plate action. Before launch "Join the
+ * waitlist" scrolls to the hero form and focuses the email field; after launch
+ * "Get the app" scrolls to the hero badge.
+ */
 export function HeaderAction() {
-  if (site.appLive) {
-    return (
-      <a className="btn btn-primary btn-small" href={site.appStoreUrl}>
-        Get the app
-      </a>
-    )
-  }
+  if (site.appLive) return <HeaderButton href="/#join">Get the app</HeaderButton>
   return (
-    <Link className="btn btn-primary btn-small" href="/#join">
+    <HeaderButton href="/#join" focusId={HERO_EMAIL_ID}>
       Join the waitlist
-    </Link>
+    </HeaderButton>
   )
 }

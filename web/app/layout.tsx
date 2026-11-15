@@ -9,7 +9,7 @@ import './globals.css'
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: 'PGYM. Proof of gym.',
+    default: site.title,
     template: '%s · PGYM',
   },
   description: site.description,
@@ -17,13 +17,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'PGYM',
-    title: 'PGYM. Proof of gym.',
+    title: site.title,
     description: site.description,
     url: '/',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PGYM. Proof of gym.',
+    title: site.title,
     description: site.description,
   },
   formatDetection: { email: false, telephone: false, address: false },
