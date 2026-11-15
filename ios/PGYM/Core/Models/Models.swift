@@ -8,6 +8,9 @@ enum Models {
 
     static var schema: Schema { Schema(all) }
 
+    /// Launch argument the UI tests pass to get an in-memory store.
+    static let uiTestingArgument = "-pgym-ui-testing"
+
     /// The app's on-phone store. If the store cannot open (a broken migration in a dev build), the app
     /// still starts on an in-memory store rather than crash.
     static func makeContainer(inMemory: Bool = false) -> ModelContainer {

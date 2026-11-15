@@ -10,7 +10,8 @@ struct PGYMApp: App {
     init() {
         FontRegistry.registerAll()
         FirebaseBootstrap.configure()
-        container = Models.makeContainer()
+        // UI tests start from an empty phone every run.
+        container = Models.makeContainer(inMemory: ProcessInfo.processInfo.arguments.contains(Models.uiTestingArgument))
         RoutineSyncSetup.configure(container: container)
     }
 

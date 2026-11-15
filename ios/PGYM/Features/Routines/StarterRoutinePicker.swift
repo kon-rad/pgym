@@ -52,13 +52,25 @@ struct StarterRoutinePicker: View {
 
     let library: ExerciseLibrary
     /// The user's weekly goal, when known, to preselect and tag the starter that fits it.
-    var weeklyGoal: Int? = nil
+    let weeklyGoal: Int?
     /// Opens F3 to build a routine from scratch. Hidden when nil.
-    var onBuildOwn: (() -> Void)? = nil
+    let onBuildOwn: (() -> Void)?
     let onUse: (StarterRoutine) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: StarterRoutine?
+
+    init(
+        library: ExerciseLibrary,
+        weeklyGoal: Int? = nil,
+        onBuildOwn: (() -> Void)? = nil,
+        onUse: @escaping (StarterRoutine) -> Void
+    ) {
+        self.library = library
+        self.weeklyGoal = weeklyGoal
+        self.onBuildOwn = onBuildOwn
+        self.onUse = onUse
+    }
 
     private var suggested: StarterRoutine? { weeklyGoal.map(StarterRoutine.suggested(forGoal:)) }
 
@@ -122,6 +134,11 @@ struct StarterPickerSheet: View {
     let library: ExerciseLibrary
     let onUse: (StarterRoutine) -> Void
     @Environment(\.dismiss) private var dismiss
+
+    init(library: ExerciseLibrary, onUse: @escaping (StarterRoutine) -> Void) {
+        self.library = library
+        self.onUse = onUse
+    }
 
     var body: some View {
         NavigationStack {

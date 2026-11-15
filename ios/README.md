@@ -22,12 +22,22 @@ The first run resolves the Swift packages from GitHub (Firebase is large; allow 
 |---|---|
 | `PGYM.xcodeproj` | The project. One scheme, `PGYM`, which builds the app and runs both test targets |
 | `PGYM/App` | Entry point, the three-tab shell, Firebase start-up |
-| `PGYM/Features` | One folder per feature: Auth, Onboarding, Today, Session, Proof, Progress, Profile |
-| `PGYM/Core` | Models (SwiftData), SyncEngine, API, Notifications |
-| `PGYM/Resources` | Asset catalog; later the exercise catalogue JSON |
+| `PGYM/Features` | One folder per feature: Auth, Onboarding, Today, Session, Proof, Progress, Profile, Routines (F2, F3, D3 and the B4 starter picker) |
+| `PGYM/Core` | Models (SwiftData: routines, custom exercises, the catalogue, starters), SyncEngine (routines to Firestore), API, Notifications |
+| `PGYM/Resources` | Asset catalog and `exercise-catalogue.json` |
 | `Packages/DesignSystem` | Local Swift package: colour, type, spacing and radius tokens, the bundled fonts, and the shared components |
-| `PGYMTests` | Unit tests (app shell, Firebase start-up, every design token) |
-| `PGYMUITests` | UI test that launches the app to the tab shell |
+| `PGYMTests` | Unit tests (app shell, Firebase start-up, design tokens, catalogue and search, routines, routine sync) |
+| `PGYMUITests` | UI tests: launch to the tab shell; Profile to Routines to editor to Add exercise |
+
+## Exercise catalogue
+
+`PGYM/Resources/exercise-catalogue.json` ships in the app: `{version, exercises: [{id, name, muscleGroup, equipment}]}`. Names only, no descriptions. IDs are stable kebab-case slugs: sessions and routines store them, so never rename an ID; change the `name` instead. Muscle groups: `chest`, `back`, `shoulders`, `arms`, `legs`, `core`. Equipment: `barbell`, `dumbbell`, `kettlebell`, `machine`, `cable`, `bodyweight`, `band`, `ezBar`, `smithMachine`, `trapBar`, `other`. The unit tests fail on a duplicate ID or an unknown group.
+
+Custom exercises (made in D3) live on the phone with IDs starting `custom-`. A routine that uses one carries its name, muscle group and equipment in Firestore, and a pull recreates the custom exercise on another phone under the same ID.
+
+## Routine sync
+
+Routines are saved on the phone first (`needsSync`) and pushed to `users/{uid}/routines/{routineId}` by `RoutineSyncEngine` when Firebase is configured and a user is signed in; the app asks for a sync on launch, on returning to the foreground and after every edit. Deletes are kept as tombstones until Firestore has them. On a conflict the newer `updatedAt` wins. Tests use `FakeRoutineRemote`; nothing in the tests talks to Firebase.
 | `Config` | Committed placeholders for files that must never be committed |
 
 Files go into a target by being in its folder: the groups are synchronised with the file system, so there is no file list in the project to edit.
