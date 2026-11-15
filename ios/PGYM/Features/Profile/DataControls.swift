@@ -20,8 +20,8 @@ final class DataControls {
     let consent: PhysiqueConsent
     let physique: PhysiqueSource
     let store: ProofStore
-    @ObservationIgnored let images: SignedImageCache?
-    @ObservationIgnored private let defaults: UserDefaults
+    let images: SignedImageCache?
+    private let defaults: UserDefaults
 
     static let erasePendingKey = "pgym.privacy.scoreErasePending"
 

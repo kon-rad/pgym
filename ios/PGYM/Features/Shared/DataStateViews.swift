@@ -5,21 +5,7 @@ import UIKit
 /// Shared pieces for the data views of card I8: section labels, the loading skeleton, the small
 /// "will sync" line and the error card (pgym-app-views.md, "States every data view needs").
 
-/// A mono, upper-case Steel label over a section.
-struct SectionLabel: View {
-    let text: String
-
-    init(_ text: String) {
-        self.text = text
-    }
-
-    var body: some View {
-        Text(text.uppercased())
-            .pgymText(.label)
-            .foregroundStyle(Color.steel)
-            .accessibilityAddTraits(.isHeader)
-    }
-}
+// Section labels use `SectionLabel` from RoutineComponents.swift.
 
 /// Anton display title, left-aligned, as on every tab root.
 struct ScreenTitle: View {
