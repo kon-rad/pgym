@@ -6,6 +6,7 @@
 import { Timestamp, type DocumentReference, type Firestore } from 'firebase-admin/firestore';
 import type { Auth } from 'firebase-admin/auth';
 import { HttpsError } from 'firebase-functions/v2/https';
+import { isAdult } from './physique';
 import {
   GET_EXPIRES_SEC,
   ID_PATTERN,
@@ -51,7 +52,7 @@ export interface Deps {
   auth?: Auth;
   now: () => Date;
   log: Logger;
-  /** Called after a stamp when the user has consented to the score. Card B2 wires the task queue. */
+  /** Called after a stamp when the user has consented to the score and is 18 or over. Queues analyzePhysique. */
   enqueuePhysique?: (uid: string, sessionId: string) => Promise<void>;
 }
 
@@ -60,7 +61,6 @@ export const ROLL_GRACE_MS = 6 * 60 * 60 * 1000;
 /** A session may not claim to start later than this past the server clock. */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 const MAX_KEYS_PER_CALL = 60;
-const ADULT_AGE = 18;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -148,12 +148,6 @@ function statsToDoc(stats: ExerciseStats) {
     lastPerformedAt: stats.lastPerformedAt ? Timestamp.fromDate(stats.lastPerformedAt) : null,
     sessionCount: stats.sessionCount,
   };
-}
-
-function isAdult(birthYear: unknown, now: Date): boolean {
-  // Year of birth only: someone born in year Y is treated as 18 from 1 January of Y + 19,
-  // the earliest date they are certainly 18.
-  return typeof birthYear === 'number' && now.getUTCFullYear() - birthYear > ADULT_AGE;
 }
 
 // ---------------------------------------------------------------------------
@@ -380,7 +374,12 @@ export async function stampSession(deps: Deps, authUid: string | undefined, data
   if (!result.alreadyStamped && deps.enqueuePhysique) {
     const u = (await uRef.get()).data();
     if (u?.physiqueConsent === true && isAdult(u.birthYear, deps.now())) {
-      await deps.enqueuePhysique(uid, sessionId);
+      // The stamp is already committed; a queue error must not fail it. The session simply has no score.
+      try {
+        await deps.enqueuePhysique(uid, sessionId);
+      } catch (err) {
+        deps.log.warn('stampSession could not queue analyzePhysique', { uid, sessionId, error: String(err) });
+      }
     }
   }
   return result;
