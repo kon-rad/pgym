@@ -1,7 +1,7 @@
 import DesignSystem
 import SwiftUI
 
-/// The three tabs from pgym-app-views.md, "Navigation". A session (D) will run full screen
+/// The three tabs from pgym-app-views.md, "Navigation". A session (D) runs full screen
 /// over this shell. Sign-in (A) gates it through `AppRootView`; onboarding (B) is card I3.
 enum AppTab: String, CaseIterable, Identifiable {
     case today, progress, profile
@@ -50,6 +50,8 @@ struct RootTabView: View {
             }
         }
         .tint(Color.chalk)
+        // D2 runs full screen over the tabs whenever a session is open (card I5).
+        .sessionHost()
     }
 
     @ViewBuilder private func screen(for tab: AppTab) -> some View {
@@ -64,10 +66,12 @@ struct RootTabView: View {
 struct RootTabView_Previews: PreviewProvider {
     static var previews: some View {
         let _ = FontRegistry.registerAll()
+        let container = Models.makeContainer(inMemory: true)
         RootTabView()
             .environment(AppSession(dependencies: .fake()))
             .environment(NetworkMonitor(fixed: true))
-            .modelContainer(Models.makeContainer(inMemory: true))
+            .environment(SessionSyncQueue(container: container, engine: nil, uid: { nil }))
+            .modelContainer(container)
             .preferredColorScheme(.dark)
     }
 }

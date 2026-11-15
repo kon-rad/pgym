@@ -23,10 +23,10 @@ The first run resolves the Swift packages from GitHub (Firebase is large; allow 
 | `PGYM.xcodeproj` | The project. One scheme, `PGYM`, which builds the app and runs both test targets |
 | `PGYM/App` | Entry point, the three-tab shell, Firebase start-up |
 | `PGYM/Features` | One folder per feature: Auth, Onboarding, Today, Session, Proof, Progress, Profile, Routines (F2, F3, D3 and the B4 starter picker) |
-| `PGYM/Core` | Models (SwiftData: routines, custom exercises, the catalogue, starters), SyncEngine (routines to Firestore), API, Notifications |
+| `PGYM/Core` | Models (SwiftData: routines, custom exercises, the catalogue, starters, sessions with their exercises and sets, per-exercise bests), SyncEngine (routines and sessions to Firestore), API, Notifications (reminders, the rest timer) |
 | `PGYM/Resources` | Asset catalog and `exercise-catalogue.json` |
 | `Packages/DesignSystem` | Local Swift package: colour, type, spacing and radius tokens, the bundled fonts, and the shared components |
-| `PGYMTests` | Unit tests (app shell, Firebase start-up, design tokens, sign-in, catalogue and search, routines, routine sync) |
+| `PGYMTests` | Unit tests (app shell, Firebase start-up, design tokens, sign-in, catalogue and search, routines, routine sync, onboarding, reminders, sessions and the session sync queue) |
 | `PGYMUITests` | UI tests: launch to the tab shell, sign-in, and Profile to Routines to editor to Add exercise |
 | `Config` | Committed placeholders for files that must never be committed |
 
@@ -111,4 +111,28 @@ Reminder rules, all local:
 - After 5 reminders in a row go unopened, daily reminders and the nudge pause and a "New week" line goes out on Mondays at the reminder time. Opening any PGYM notification or logging a session brings the daily ones back. The back-off is planned six weeks ahead, so it also works while the app stays closed.
 - Goal and gym-day changes apply from next Monday; a new time applies at once.
 
-For cards I5 and I7: call `services.reminders.sessionLogged(at: startedAt, countsTowardWeek: false)` when a draft starts and `sessionLogged(at: startedAt)` when the session is stamped. Card I8's F4 calls `changePlan(_:)` and writes the same fields with `UserRepository.saveOnboarding`.
+`TodayScreen` calls `services.reminders.sessionLogged(at:countsTowardWeek: false)` when a draft starts (card I5). For card I7: call `sessionLogged(at: startedAt)` when the session is stamped. Card I8's F4 calls `changePlan(_:)` and writes the same fields with `UserRepository.saveOnboarding`.
+
+## Active session (card I5)
+
+Views D1 Pick routine, D2 Active session, D4 Set detail and D5 Leave session. D3 Add exercise comes from card I4.
+
+| Piece | Where |
+|---|---|
+| SwiftData models `WorkoutSession`, `SessionExercise`, `SessionSet`, `ExerciseStat` | `PGYM/Core/Models/Session.swift` |
+| Every session write (pre-fill, check, copy-down, new best, rest timer, finish, discard) | `PGYM/Core/Models/SessionStore.swift` |
+| Epley, totals, new-best rule (mirrors `backend/src/sessionStats.ts`) | `PGYM/Core/Models/SessionMath.swift` |
+| kg and lb display, 2.5 kg and 5 lb steps | `PGYM/Core/Models/WeightUnit.swift` |
+| Rest notification | `PGYM/Core/Notifications/RestTimerNotifier.swift` |
+| Sync queue to `users/{uid}/sessions/{id}` | `PGYM/Core/SyncEngine/SessionSync.swift`, `FirestoreSessionRemote.swift` |
+| Screens | `PGYM/Features/Session/` |
+
+How it stays offline-first:
+
+- Every tap is saved to SwiftData at once. Elapsed time and the rest timer are stored as instants, so a lock, the background or a kill changes nothing.
+- The full-screen session is shown whenever an open draft exists (`SessionHost`), so after a kill the app opens straight back into D2.
+- A session is queued while `localVersion > syncedVersion`. The queue writes the whole client part of the document under the session's own ID (`setData` with merge), marks the version it wrote, retries with back-off after a failure, and waits while offline. A stamped session and the server-only fields are never written.
+- Weights are stored in kilograms. A value typed in pounds is stored as its exact kilogram equivalent and a stored value is never rewritten from its rounded display, so 100 lb stays 100 lb.
+- The display unit is the `units` on the user's profile (B5, card I3), then a choice saved on the phone, then the region's default (`WeightUnit.preferred`).
+- Like routine sync, the queue talks to Firestore only on the Firebase backend, for the signed-in user from `AppSession`; with the fake auth backend sessions stay queued on the phone.
+- The rest notification's identifier is kept outside the reminders' `pgym.` prefix, so a reminder reschedule never removes it.
