@@ -1,0 +1,5 @@
+// Copy to Config/Local.xcconfig (gitignored) and fill in. Never commit the copy.
+
+// REVERSED_CLIENT_ID from your GoogleService-Info.plist, for example
+// com.googleusercontent.apps.YOUR-CLIENT-ID
+PGYM_GOOGLE_REVERSED_CLIENT_ID =

@@ -1,0 +1,9 @@
+// Build settings for the PGYM app target that differ per developer or per Firebase project.
+// Committed values are placeholders. Put real ones in Config/Local.xcconfig (gitignored);
+// Config/Local.example.xcconfig shows the keys.
+
+// Google Sign-In returns to the app through this URL scheme. It is REVERSED_CLIENT_ID from
+// GoogleService-Info.plist. The placeholder lets the app build; Google sign-in needs the real one.
+PGYM_GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.pgym-placeholder
+
+#include? "Local.xcconfig"
