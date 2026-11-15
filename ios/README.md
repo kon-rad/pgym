@@ -79,3 +79,24 @@ To use the real providers:
 3. **Email:** enable Email/Password in Firebase Authentication. Verification and reset emails use Firebase's templates.
 
 The minimum age (`AgePolicy.minimumAge`, 13) and the password length (`PasswordPolicy.minimumLength`, 8) are placeholders for open decisions.
+
+## Active session (card I5)
+
+Views D1 Pick routine, D2 Active session, D4 Set detail and D5 Leave session. D3 Add exercise comes from card I4.
+
+| Piece | Where |
+|---|---|
+| SwiftData models `WorkoutSession`, `SessionExercise`, `SessionSet`, `ExerciseStat` | `PGYM/Core/Models/Session.swift` |
+| Every session write (pre-fill, check, copy-down, new best, rest timer, finish, discard) | `PGYM/Core/Models/SessionStore.swift` |
+| Epley, totals, new-best rule (mirrors `backend/src/sessionStats.ts`) | `PGYM/Core/Models/SessionMath.swift` |
+| kg and lb display, 2.5 kg and 5 lb steps | `PGYM/Core/Models/WeightUnit.swift` |
+| Rest notification | `PGYM/Core/Notifications/RestTimerNotifier.swift` |
+| Sync queue to `users/{uid}/sessions/{id}` | `PGYM/Core/SyncEngine/SessionSync.swift`, `FirestoreSessionRemote.swift` |
+| Screens | `PGYM/Features/Session/` |
+
+How it stays offline-first:
+
+- Every tap is saved to SwiftData at once. Elapsed time and the rest timer are stored as instants, so a lock, the background or a kill changes nothing.
+- The full-screen session is shown whenever an open draft exists (`SessionHost`), so after a kill the app opens straight back into D2.
+- A session is queued while `localVersion > syncedVersion`. The queue writes the whole client part of the document under the session's own ID (`setData` with merge), marks the version it wrote, retries with back-off after a failure, and waits while offline. A stamped session and the server-only fields are never written.
+- Weights are stored in kilograms. A value typed in pounds is stored as its exact kilogram equivalent and a stored value is never rewritten from its rounded display, so 100 lb stays 100 lb.
