@@ -48,7 +48,6 @@ final class ProofServices {
 
     /// Wires the queue's hooks. Called once at launch.
     func connect(
-        container: ModelContainer,
         sessionSync: SessionSyncQueue,
         account: AppSession,
         reminders: ReminderScheduler,

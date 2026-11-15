@@ -58,7 +58,6 @@ struct PGYMApp: App {
             sessionSync: sessionSync
         )
         proofs.connect(
-            container: container,
             sessionSync: sessionSync,
             account: session,
             reminders: services.reminders,

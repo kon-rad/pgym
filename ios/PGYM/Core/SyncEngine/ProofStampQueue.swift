@@ -193,7 +193,11 @@ final class ProofStampQueue {
             return
         }
         task = Task { @MainActor [weak self] in
-            await self?.run()
+            // A request that came in while the last pass was ending gets its own pass.
+            repeat {
+                self?.again = false
+                await self?.run()
+            } while self?.again == true
             self?.task = nil
         }
     }

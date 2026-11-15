@@ -84,10 +84,10 @@ final class StampingTests: XCTestCase {
         let store = makeStore()
         let objects = FakeObjectStore()
         let serverNow = serverNow
-        let api = FakeProofAPI(objects: objects, uid: uid, now: { serverNow }, lastProofNumber: 41, weekGoal: 4, weekCountBefore: 2, streakClosed: 6)
+        let api = FakeProofAPI(objects: objects, uid: self.uid, now: { serverNow }, lastProofNumber: 41, weekGoal: 4, weekCountBefore: 2, streakClosed: 6)
         let uploader = FakeProofUploader(objects: objects)
         let engine = ProofStampEngine(api: api, uploader: uploader, store: store, uploadAttempts: 3, uploadRetryDelays: [0], sleep: { _ in })
-        let uid = uid
+        let uid = self.uid
         let queue = ProofStampQueue(
             container: container,
             engine: engine,
@@ -298,9 +298,9 @@ final class StampingTests: XCTestCase {
         let container = makeContainer()
         let store = makeStore()
         let objects = FakeObjectStore()
-        let api = FakeProofAPI(objects: objects, uid: uid)
+        let api = FakeProofAPI(objects: objects, uid: self.uid)
         let engine = ProofStampEngine(api: api, uploader: FakeProofUploader(objects: objects), store: store, sleep: { _ in })
-        let uid = uid
+        let uid = self.uid
         let queue = ProofStampQueue(
             container: container, engine: engine, uid: { uid },
             isSynced: { _ in synced }, requestSessionSync: { syncRequests += 1 },

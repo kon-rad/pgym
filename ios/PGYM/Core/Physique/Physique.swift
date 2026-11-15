@@ -137,27 +137,30 @@ final class PhysiqueConsent {
     func flush() async {
         guard needsUpload, let uid, let writer else { return }
         let value = isOn
-        do {
-            // Firestore holds an offline write until the server acknowledges it; do not let that hold
-            // up the stamp queue. The SDK still sends it later, and so does the next flush.
-            let sent = try await withThrowingTaskGroup(of: Bool.self) { group -> Bool in
-                group.addTask { @MainActor in
+        // Firestore answers an offline write only once the server has it, and the await is not
+        // cancellable, so race it without waiting on it: the stamp queue never stalls here. The
+        // SDK still sends the write later, and so does the next flush.
+        let sent: Bool = await withCheckedContinuation { continuation in
+            let gate = OnceGate()
+            Task { @MainActor in
+                let ok: Bool
+                do {
                     try await writer.setPhysiqueConsent(value, uid: uid)
-                    return true
+                    ok = true
+                } catch {
+                    ok = false
                 }
-                group.addTask {
-                    try? await Task.sleep(nanoseconds: 10_000_000_000)
-                    return false
-                }
-                defer { group.cancelAll() }
-                return try await group.next() ?? false
+                if gate.claim() { continuation.resume(returning: ok) }
             }
-            guard sent, self.uid == uid, isOn == value else { return }
-            needsUpload = false
-            defaults.set(false, forKey: key("needsUpload", uid))
-        } catch {
-            // Offline or refused: stays queued; the next stamp or reconnect sends it.
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                if gate.claim() { continuation.resume(returning: false) }
+            }
         }
+        // Offline or refused: stays queued; the next stamp or reconnect sends it.
+        guard sent, self.uid == uid, isOn == value else { return }
+        needsUpload = false
+        defaults.set(false, forKey: key("needsUpload", uid))
     }
 
     /// Signed out: nothing of this user's stays in memory.
@@ -176,6 +179,18 @@ final class PhysiqueConsent {
         defaults.set(on, forKey: key("isOn", uid))
         defaults.set(true, forKey: key("needsUpload", uid))
         defaults.set(true, forKey: key("offerShown", uid))
+    }
+}
+
+/// Lets exactly one of two racing tasks resume a continuation.
+@MainActor
+private final class OnceGate {
+    private var done = false
+
+    func claim() -> Bool {
+        guard !done else { return false }
+        done = true
+        return true
     }
 }
 
