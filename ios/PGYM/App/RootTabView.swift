@@ -64,6 +64,8 @@ struct RootTabView: View {
 struct RootTabView_Previews: PreviewProvider {
     static var previews: some View {
         let _ = FontRegistry.registerAll()
-        RootTabView().preferredColorScheme(.dark)
+        RootTabView()
+            .modelContainer(Models.makeContainer(inMemory: true))
+            .preferredColorScheme(.dark)
     }
 }
