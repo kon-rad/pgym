@@ -4,8 +4,15 @@
 <!--
   Keys Xcode cannot generate from INFOPLIST_KEY_ settings. Merged with the generated Info.plist.
   The Google scheme comes from PGYM_GOOGLE_REVERSED_CLIENT_ID in Config/PGYM.xcconfig.
+  NSAllowsLocalNetworking lets the simulator PUT to MinIO and call the emulator over plain HTTP on the
+  local network (card I7). It does not loosen App Transport Security for any internet host.
 -->
 <dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
