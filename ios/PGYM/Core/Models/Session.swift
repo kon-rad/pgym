@@ -82,6 +82,14 @@ final class WorkoutSession {
     /// Upload or stamp attempts that failed, for the back-off.
     var stampFailures: Int? = nil
 
+    // MARK: Physique (card I8). The phone's copy of `sessions/{id}.physique`, which only the server
+    // writes. Kept so E1, E3 and E5 work offline; cleared on the phone the moment analysis is turned off.
+
+    var physiqueScore: Int? = nil
+    var physiqueTip: String? = nil
+    var physiqueRefusedReason: String? = nil
+    var physiqueAnalyzedAt: Date? = nil
+
     static let defaultRestSeconds = 90
 
     init(
@@ -148,6 +156,23 @@ final class WorkoutSession {
     func elapsed(at now: Date) -> TimeInterval {
         max(0, (endedAt ?? now).timeIntervalSince(startedAt))
     }
+
+    /// The stored score or refusal, as the server wrote it. Nil when there is neither.
+    var physique: PhysiqueRecord? {
+        guard physiqueScore != nil || physiqueRefusedReason != nil else { return nil }
+        return PhysiqueRecord(score: physiqueScore, tip: physiqueTip, refusedReason: physiqueRefusedReason, analyzedAt: physiqueAnalyzedAt)
+    }
+
+    /// Takes the server's `physique` map (or its absence). Not a local change: no sync is queued,
+    /// because the client may never write `physique`.
+    func applyPhysique(_ record: PhysiqueRecord?) {
+        physiqueScore = record?.isScored == true ? record?.score : nil
+        physiqueTip = record?.isScored == true ? record?.tip : nil
+        physiqueRefusedReason = record?.refusedReason
+        physiqueAnalyzedAt = record?.analyzedAt
+    }
+
+    var hasPhysique: Bool { physiqueScore != nil || physiqueRefusedReason != nil || physiqueTip != nil }
 }
 
 /// One exercise inside a session, with its sets. Firestore: an element of `sessions/{id}.exercises`.
