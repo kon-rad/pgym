@@ -51,7 +51,8 @@ struct SessionCompleteScreen: View {
             }
         }
         .preferredColorScheme(.dark)
-        .accessibilityIdentifier(Self.viewID)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("screen.\(Self.viewID)")
         .task(id: listenKey) { await listen() }
         .task(id: workingKey) { await watchSlow() }
         .onAppear {
@@ -156,30 +157,39 @@ struct SessionCompleteScreen: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: Radius.photo, style: .continuous))
         .frame(maxWidth: .infinity, maxHeight: 360)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(session.proofNumber.map { "Proof card, proof \($0)" } ?? "Proof card, proof pending, will stamp when online")
         .accessibilityAddTraits(.isImage)
+        .accessibilityIdentifier("d11.card")
     }
 
     private func weekSection(_ model: SessionCompleteModel) -> some View {
         VStack(alignment: .leading, spacing: Spacing.grid(3)) {
             sectionLabel(StampCopy.sectionThisWeek)
-            HStack(spacing: 0) {
-                ForEach(Array(model.weekRings.enumerated()), id: \.offset) { _, ring in
-                    DayRing(day: String(ring.day.short.prefix(1)), state: ring.status)
-                        .frame(maxWidth: .infinity)
-                }
-            }
+            WeekRings(
+                days: model.weekRings,
+                count: model.weekRings.filter { $0.status == .done }.count,
+                goal: account?.profile?.goalPerWeek,
+                identifier: "d11.rings"
+            )
             .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: model.weekRings.map { $0.status })
         }
     }
 
+    /// Three tiles across; stacked at the accessibility sizes so no number is shrunk or cut.
     private func statsRow(_ model: SessionCompleteModel) -> some View {
-        HStack(spacing: Spacing.grid(2)) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: Spacing.grid(2)))
+            : AnyLayout(HStackLayout(spacing: Spacing.grid(2)))
+        return layout {
             ForEach(model.stats, id: \.label) { stat in
                 StatTile(label: stat.label.uppercased(), value: stat.value, unit: stat.unit?.uppercased())
             }
         }
+        .accessibilityIdentifier("d11.stats")
     }
+
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private func bestsSection(_ model: SessionCompleteModel) -> some View {
         VStack(alignment: .leading, spacing: Spacing.grid(2)) {
@@ -290,24 +300,34 @@ private struct StampHeader: View {
         VStack(alignment: .leading, spacing: Spacing.grid(3)) {
             switch area {
             case let .stamped(number, timestamp):
-                Stamp(proofNumber: max(1, shownNumber), line: nil, rotation: Rotation.proofCardStamp)
-                    .scaleEffect(landed || reduceMotion ? 1 : 1.8)
-                    .opacity(landed ? 1 : 0)
-                    .accessibilityLabel("Proof \(number)")
-                Text(timestamp)
-                    .font(.pgym(.data, size: 13))
-                    .foregroundStyle(Color.bone)
-                    .accessibilityLabel("Stamped \(timestamp)")
-                    .onAppear { land(number) }
+                // One element: "Proof 42, stamped Sun 15 Nov 2026 18:47" (pgym-flow-spec.md).
+                VStack(alignment: .leading, spacing: Spacing.grid(3)) {
+                    Stamp(proofNumber: max(1, shownNumber), line: nil, rotation: Rotation.proofCardStamp)
+                        .scaleEffect(landed || reduceMotion ? 1 : 1.8)
+                        .opacity(landed ? 1 : 0)
+                    Text(timestamp)
+                        .font(.pgym(.data, size: 13))
+                        .foregroundStyle(Color.bone)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(StampCopy.a11yStamped(number: number, timestamp: timestamp))
+                .accessibilityIdentifier("d11.stamp")
+                .onAppear { land(number) }
             case let .working(progress, slow):
                 Stamp(proofNumber: nil, line: nil, rotation: Rotation.proofCardStamp)
                     .opacity(0.6)
+                    .accessibilityLabel(StampCopy.a11yPending)
+                    .accessibilityIdentifier("d9.stamp")
                 Text(slow ? StampCopy.stampingSlow : StampCopy.stampingBody)
                     .pgymText(.body, size: 15)
                     .foregroundStyle(Color.bone)
+                    .fixedSize(horizontal: false, vertical: true)
                 ProgressBar(fraction: progress)
             case .offline:
                 Stamp(proofNumber: nil, line: "PENDING", rotation: Rotation.proofCardStamp)
+                    .accessibilityLabel(StampCopy.a11yPending)
+                    .accessibilityIdentifier("d9.stamp")
                 Text(StampCopy.offlineBody)
                     .pgymText(.body, size: 15)
                     .foregroundStyle(Color.bone)
@@ -317,6 +337,8 @@ private struct StampHeader: View {
                     .foregroundStyle(Color.steel)
             case .failed:
                 Stamp(proofNumber: nil, line: "PENDING", rotation: Rotation.proofCardStamp)
+                    .accessibilityLabel(StampCopy.a11yPending)
+                    .accessibilityIdentifier("d9.stamp")
                 Text(StampCopy.errorBody)
                     .pgymText(.body, size: 15)
                     .foregroundStyle(Color.bone)
@@ -324,6 +346,7 @@ private struct StampHeader: View {
                     .accessibilityIdentifier("d9.retry")
             }
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("D9")
         .sensoryFeedback(.impact(weight: .heavy), trigger: stampTick)
     }

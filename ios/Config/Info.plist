@@ -6,8 +6,19 @@
   The Google scheme comes from PGYM_GOOGLE_REVERSED_CLIENT_ID in Config/PGYM.xcconfig.
   NSAllowsLocalNetworking lets the simulator PUT to MinIO and call the emulator over plain HTTP on the
   local network (card I7). It does not loosen App Transport Security for any internet host.
+  UILaunchScreen (card I9): the PGYM mark on Ink, the same mark and size as the launch view in
+  AppRootView.swift, so launch hands over to the app without a flash. Assets: LaunchBackground, LaunchMark.
 -->
 <dict>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchMark</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<true/>
+	</dict>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

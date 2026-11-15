@@ -170,13 +170,16 @@ struct ActiveSessionScreen: View {
                 Text(session.routineName)
                     .pgymText(.title)
                     .foregroundStyle(Color.chalk)
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeIsAccessibility ? 3 : 1)
                     .accessibilityAddTraits(.isHeader)
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                    Text(SessionClock.elapsed(session.elapsed(at: timeline.date)))
+                    let elapsed = session.elapsed(at: timeline.date)
+                    Text(SessionClock.elapsed(elapsed))
                         .font(.pgym(.data, size: 15))
                         .foregroundStyle(Color.steel)
                         .monospacedDigit()
+                        // Read once when focused, not every second.
+                        .accessibilityLabel(SessionCopy.a11yElapsed(SessionClock.spoken(elapsed)))
                 }
                 .accessibilityIdentifier("d2.elapsed")
             }
@@ -373,7 +376,7 @@ struct ActiveSessionScreen: View {
                 Text(summary)
                     .font(.pgym(.bodyMedium, size: 15))
                     .foregroundStyle(exercise.isComplete ? Color.chalk : Color.bone)
-                    .lineLimit(2)
+                    .lineLimit(dynamicTypeIsAccessibility ? nil : 2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if exercise.sets.contains(where: \.isNewBest) {
                     Text(SessionCopy.newBest)
@@ -390,6 +393,7 @@ struct ActiveSessionScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityHint(SessionCopy.a11yMakeCurrentHint)
         .accessibilityIdentifier("d2.exercise.\(exercise.order)")
     }
 

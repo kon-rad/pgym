@@ -25,6 +25,9 @@ struct ProofCameraScreen: View {
     @State private var countTick = 0
 
     private let preferences: ProofPreferences
+    /// UI tests on the simulator (Debug only): no hardware, the shutter returns a drawn picture.
+    private let fakeCamera = UITestCamera.isOn
+    private var isReady: Bool { fakeCamera || camera.status == .running }
 
     init(preferences: ProofPreferences = ProofPreferences(), onCapture: @escaping (Data) -> Void, onClose: @escaping () -> Void) {
         self.preferences = preferences
@@ -37,19 +40,19 @@ struct ProofCameraScreen: View {
     var body: some View {
         ZStack {
             Color.photo.ignoresSafeArea()
-            if camera.status != .unavailable {
+            if !fakeCamera && camera.status != .unavailable {
                 CameraPreview(session: camera.engine.session)
                     .ignoresSafeArea()
                     .opacity(camera.status == .running ? 1 : 0)
                     .animation(.easeOut(duration: reduceMotion ? 0 : 0.25), value: camera.status)
             }
-            if camera.status == .starting {
+            if !fakeCamera && camera.status == .starting {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 56, weight: .bold))
                     .foregroundStyle(Color.steel)
                     .accessibilityHidden(true)
             }
-            if camera.status == .unavailable {
+            if !fakeCamera && camera.status == .unavailable {
                 Text(ProofCopy.cameraBusy)
                     .pgymText(.body, size: 17)
                     .foregroundStyle(Color.chalk)
@@ -87,19 +90,20 @@ struct ProofCameraScreen: View {
         .sensoryFeedback(.impact(weight: .heavy), trigger: shutterTick)
         .sensoryFeedback(.selection, trigger: countTick)
         .modifier(VolumeShutter { shoot() })
-        .onAppear { camera.start() }
+        .onAppear { if !fakeCamera { camera.start() } }
         .onDisappear {
             countdownTask?.cancel()
             camera.stop()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active, camera.status == .unavailable { camera.start() }
+            if phase == .active, !fakeCamera, camera.status == .unavailable { camera.start() }
         }
         .task {
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             withAnimation(.easeOut(duration: reduceMotion ? 0 : 0.4)) { showHint = false }
         }
-        .accessibilityIdentifier(Self.viewID)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("screen.\(Self.viewID)")
     }
 
     private var topBar: some View {
@@ -145,7 +149,7 @@ struct ProofCameraScreen: View {
                         .scaleEffect(camera.isCapturing ? 0.88 : 1)
                 }
             }
-            .disabled(camera.status != .running || camera.isCapturing)
+            .disabled(!isReady || camera.isCapturing)
             .accessibilityLabel(timerOn ? ProofCopy.shutterTimerLabel : ProofCopy.shutterLabel)
             .accessibilityIdentifier("d7.shutter")
             Spacer()
@@ -176,7 +180,7 @@ struct ProofCameraScreen: View {
 
     /// The shutter (or a volume button). With the timer on: 3, 2, 1, then the photo.
     private func shoot() {
-        guard camera.status == .running, !camera.isCapturing else { return }
+        guard isReady, !camera.isCapturing else { return }
         if countdown != nil {
             // A second tap during the countdown cancels it.
             countdownTask?.cancel()
@@ -206,7 +210,13 @@ struct ProofCameraScreen: View {
                 flash = true
                 withAnimation(.easeOut(duration: 0.25)) { flash = false }
             }
-            guard let data = await camera.capture() else { return }
+            let captured: Data?
+            if fakeCamera {
+                captured = UITestCamera.photoData()
+            } else {
+                captured = await camera.capture()
+            }
+            guard let data = captured else { return }
             onCapture(data)
         }
     }

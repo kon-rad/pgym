@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The main button: Plate fill, Ink text in Anton 20 upper case, 56 pt high, radius 12.
 /// One per screen. Plate means "do this"; never use it for a destructive action.
+/// At large text sizes it grows in height with the text and never truncates (pgym-flow-spec.md).
 public struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
@@ -10,6 +11,10 @@ public struct PrimaryButtonStyle: ButtonStyle {
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .pgymText(.button)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, Spacing.grid(2))
+            .padding(.horizontal, Spacing.grid(3))
             .foregroundStyle(isEnabled ? Color.ink : Color.steel)
             .frame(maxWidth: .infinity, minHeight: Spacing.mainButtonHeight)
             .background(
@@ -30,6 +35,10 @@ public struct SecondaryButtonStyle: ButtonStyle {
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.pgym(.bodyMedium, size: 17))
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, Spacing.grid(2))
+            .padding(.horizontal, Spacing.grid(3))
             .foregroundStyle(isEnabled ? Color.chalk : Color.steel)
             .frame(maxWidth: .infinity, minHeight: Spacing.secondaryButtonHeight)
             .background(

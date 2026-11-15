@@ -194,12 +194,18 @@ struct RestBar: View {
     let onAdjust: (Int) -> Void
     let onSkip: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let left = max(0, Int(endsAt.timeIntervalSince(context.date).rounded(.up)))
             let progress = total > 0 ? Double(left) / Double(total) : 0
+            // At the accessibility sizes the clock sits above the three pills instead of beside them.
+            let layout = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.grid(2)))
+                : AnyLayout(HStackLayout(spacing: Spacing.grid(3)))
             VStack(spacing: Spacing.grid(2)) {
-                HStack(spacing: Spacing.grid(3)) {
+                layout {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(SessionCopy.rest).pgymText(.label).foregroundStyle(Color.steel)
                         Text(Self.clock(left))
@@ -211,10 +217,11 @@ struct RestBar: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(SessionCopy.a11yRestLeft(SessionCopy.a11yRestSpoken(left)))
                     .accessibilityIdentifier("d2.rest.clock")
-                    Spacer()
-                    pill(SessionCopy.minus15, id: "d2.rest.minus") { onAdjust(-15) }
-                    pill(SessionCopy.plus15, id: "d2.rest.plus") { onAdjust(15) }
-                    pill(SessionCopy.skip, id: "d2.rest.skip", action: onSkip)
+                    if !typeSize.isAccessibilitySize { Spacer() }
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: Spacing.grid(2)) { pills }
+                        VStack(alignment: .leading, spacing: Spacing.grid(2)) { pills }
+                    }
                 }
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
@@ -234,11 +241,19 @@ struct RestBar: View {
         "\(seconds / 60):" + String(format: "%02d", seconds % 60)
     }
 
-    private func pill(_ title: String, id: String, action: @escaping () -> Void) -> some View {
+    @ViewBuilder private var pills: some View {
+        pill(SessionCopy.minus15, label: SessionCopy.a11yMinus15, id: "d2.rest.minus") { onAdjust(-15) }
+        pill(SessionCopy.plus15, label: SessionCopy.a11yPlus15, id: "d2.rest.plus") { onAdjust(15) }
+        pill(SessionCopy.skip, label: SessionCopy.a11ySkipRest, id: "d2.rest.skip", action: onSkip)
+    }
+
+    private func pill(_ title: String, label: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.pgym(.bodyMedium, size: 15))
                 .foregroundStyle(Color.chalk)
+                .lineLimit(1)
+                .fixedSize()
                 .padding(.horizontal, Spacing.grid(3))
                 .frame(minHeight: Spacing.touchTargetMin)
                 .background(Capsule().fill(Color.ink))
@@ -246,6 +261,7 @@ struct RestBar: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
         .accessibilityIdentifier(id)
     }
 }
@@ -273,6 +289,16 @@ enum SessionClock {
         let h = total / 3600, m = (total % 3600) / 60, s = total % 60
         if h > 0 { return "\(h):" + String(format: "%02d:%02d", m, s) }
         return "\(m):" + String(format: "%02d", s)
+    }
+
+    /// For VoiceOver: "52 minutes", "1 hour 2 minutes", "40 seconds". Seconds are dropped past a minute.
+    static func spoken(_ interval: TimeInterval) -> String {
+        let total = max(0, Int(interval))
+        let h = total / 3600, m = (total % 3600) / 60
+        func unit(_ n: Int, _ word: String) -> String { "\(n) \(word)\(n == 1 ? "" : "s")" }
+        if h > 0 { return m > 0 ? unit(h, "hour") + " " + unit(m, "minute") : unit(h, "hour") }
+        if m > 0 { return unit(m, "minute") }
+        return unit(total, "second")
     }
 }
 

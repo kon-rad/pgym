@@ -74,8 +74,12 @@ struct ProofCardEditorScreen: View {
         .task(id: options) { await renderPreview() }
         .task { await renderThumbnails() }
         .onChange(of: options) { _, new in preferences.cardOptions = new }
-        .accessibilityIdentifier(Self.viewID)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("screen.\(Self.viewID)")
     }
+
+    @Environment(\.dynamicTypeSize) private var typeSize
+    private var isAccessibilitySize: Bool { typeSize.isAccessibilitySize }
 
     // MARK: Sections
 
@@ -105,7 +109,11 @@ struct ProofCardEditorScreen: View {
     private var filterPicker: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(2)) {
             sectionLabel(ProofCopy.sectionFilter)
-            HStack(spacing: Spacing.grid(3)) {
+            // Four across; two by two at the accessibility sizes so the names stay readable.
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.grid(3), alignment: .top), count: isAccessibilitySize ? 2 : 4),
+                spacing: Spacing.grid(3)
+            ) {
                 ForEach(ProofFilter.allCases, id: \.self) { filter in
                     let selected = options.filter == filter
                     Button {
@@ -129,6 +137,8 @@ struct ProofCardEditorScreen: View {
                             Text(filter.label)
                                 .pgymText(.labelBold, size: 11)
                                 .foregroundStyle(selected ? Color.chalk : Color.steel)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         .scaleEffect(selected ? 1.04 : 1)
                     }
@@ -144,12 +154,20 @@ struct ProofCardEditorScreen: View {
 
     private var statPicker: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(2)) {
-            HStack {
-                sectionLabel(ProofCopy.sectionOnCard)
-                Spacer()
-                Text(ProofCopy.pickThree)
-                    .pgymText(.label, size: 11)
-                    .foregroundStyle(Color.steel)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    sectionLabel(ProofCopy.sectionOnCard)
+                    Spacer()
+                    Text(ProofCopy.pickThree)
+                        .pgymText(.label, size: 11)
+                        .foregroundStyle(Color.steel)
+                }
+                VStack(alignment: .leading, spacing: Spacing.grid(1)) {
+                    sectionLabel(ProofCopy.sectionOnCard)
+                    Text(ProofCopy.pickThree)
+                        .pgymText(.label, size: 11)
+                        .foregroundStyle(Color.steel)
+                }
             }
             FlowChips(items: ProofCardStat.allCases, isOn: { options.stats.contains($0) }, label: \.toggleLabel) { stat in
                 guard !options.stats.contains(stat) else { return }
@@ -174,6 +192,9 @@ struct ProofCardEditorScreen: View {
                         Text(size.label)
                             .font(.pgym(.data, size: 15))
                             .foregroundStyle(selected ? Color.ink : Color.chalk)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, Spacing.grid(1))
                             .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
                             .background(
                                 RoundedRectangle(cornerRadius: Radius.button, style: .continuous)
@@ -185,6 +206,7 @@ struct ProofCardEditorScreen: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(ProofCopy.sizeLabel(size))
                     .accessibilityAddTraits(selected ? .isSelected : [])
                     .accessibilityIdentifier("d8.size.\(size.rawValue)")
                 }
@@ -193,10 +215,14 @@ struct ProofCardEditorScreen: View {
     }
 
     private var footer: some View {
-        VStack(spacing: Spacing.grid(2)) {
-            HStack(spacing: Spacing.grid(3)) {
+        // Side by side; stacked full width at the accessibility sizes, so neither label is cut.
+        let layout = isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: Spacing.grid(2)))
+            : AnyLayout(HStackLayout(spacing: Spacing.grid(3)))
+        return VStack(spacing: Spacing.grid(2)) {
+            layout {
                 SecondaryButton(ProofCopy.retake, action: onRetake)
-                    .frame(maxWidth: 140)
+                    .frame(maxWidth: isAccessibilitySize ? .infinity : 140)
                     .accessibilityHint(ProofCopy.retakeHint)
                     .accessibilityIdentifier("d8.retake")
                 Button {
@@ -215,6 +241,9 @@ struct ProofCardEditorScreen: View {
             Text(ProofCopy.retakeHint)
                 .pgymText(.body, size: 13)
                 .foregroundStyle(Color.steel)
+                .fixedSize(horizontal: false, vertical: true)
+                // Already the Retake button's hint; read once, not twice.
+                .accessibilityHidden(true)
         }
         .padding(.horizontal, Spacing.screenMargin)
         .padding(.top, Spacing.grid(3))
@@ -276,6 +305,8 @@ struct FlowChips<Item: Hashable>: View {
     let label: (Item) -> String
     let onTap: (Item) -> Void
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     init(items: [Item], isOn: @escaping (Item) -> Bool, label: KeyPath<Item, String>, onTap: @escaping (Item) -> Void) {
         self.items = items
         self.isOn = isOn
@@ -299,7 +330,7 @@ struct FlowChips<Item: Hashable>: View {
                         .font(.system(size: 12, weight: .bold))
                     Text(label(item))
                         .font(.pgym(.bodyMedium, size: 15))
-                        .lineLimit(1)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                 }
                 .foregroundStyle(on ? Color.ink : Color.chalk)
                 .padding(.horizontal, Spacing.grid(3))

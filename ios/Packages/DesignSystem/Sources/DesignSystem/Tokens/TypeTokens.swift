@@ -106,6 +106,16 @@ public enum TypeRole: String, CaseIterable, Sendable {
         case .data: .body
         }
     }
+
+    /// The largest Dynamic Type size the role follows. Anton display titles scale one step past the
+    /// default and then wrap (pgym-flow-spec.md, "Dynamic Type at the largest size"); everything else
+    /// follows the system all the way to Accessibility XXXL.
+    public var maxDynamicTypeSize: DynamicTypeSize {
+        switch self {
+        case .display: .xLarge
+        default: .accessibility5
+        }
+    }
 }
 
 public extension Font {
@@ -128,6 +138,7 @@ private struct PGYMTextModifier: ViewModifier {
             .textCase(role.isUppercase ? .uppercase : nil)
             // SwiftUI cannot tighten below the font's own line height, so roles under 1.0 get 0.
             .lineSpacing(max(0, s * (role.lineHeight - 1)))
+            .dynamicTypeSize(...role.maxDynamicTypeSize)
     }
 }
 

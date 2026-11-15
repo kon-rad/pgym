@@ -206,3 +206,22 @@ The physique score:
 Without Firebase (fresh clone, UI tests) a fake server in memory stamps sessions so every screen can be clicked through; no score ever arrives there.
 
 To run against the emulator and MinIO: start the backend as in `backend/README.md`, set `PGYM_EMULATOR_HOST`, and put a `GoogleService-Info.plist` for `pgym-local` in `PGYM/Resources/`. The simulator uses the App Check debug provider; the emulator does not enforce App Check.
+
+## TestFlight readiness (card I9)
+
+The App Review map, what the build carries and what only the owner can do (signing, the App Store Connect record, the upload, the review notes about the AI score) are in `docs/TESTFLIGHT_CHECKLIST.md` at the repo root.
+
+| Piece | Where |
+|---|---|
+| Privacy manifest | `PGYM/Resources/PrivacyInfo.xcprivacy` |
+| App icon and launch mark, drawn from the final logo geometry (`python3 Tools/make-app-icon.py`) | `PGYM/Resources/Assets.xcassets/AppIcon.appiconset`, `LaunchMark.imageset`, `LaunchBackground.colorset` |
+| Launch screen (`UILaunchScreen`) | `Config/Info.plist` |
+| Week rings as one VoiceOver sentence (C1, D11) | `PGYM/Features/Shared/WeekRings.swift` |
+| Debug-only camera stand-in for UI tests (`-pgym-ui-test-camera`); a Release build cannot turn it on | `PGYM/Features/Proof/UITestCamera.swift` |
+| Faked sign-in to a stamped proof, checking identifiers and VoiceOver labels | `PGYMUITests/ProofFlowUITests.swift` |
+
+Archive without signing (no upload):
+
+```sh
+xcodebuild archive -scheme PGYM -destination 'generic/platform=iOS' -archivePath build/PGYM.xcarchive CODE_SIGNING_ALLOWED=NO
+```
