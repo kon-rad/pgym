@@ -52,6 +52,10 @@ export interface Placeholders {
   domain: string | null
   apiDomain: string | null
   email: string | null
+  /** [COMPANY] in the legal drafts, from NEXT_PUBLIC_OPERATOR_NAME. */
+  company?: string | null
+  /** [ADDRESS] in the legal drafts, from NEXT_PUBLIC_OPERATOR_ADDRESS. */
+  address?: string | null
 }
 
 export function sitePlaceholders(): Placeholders {
@@ -59,15 +63,19 @@ export function sitePlaceholders(): Placeholders {
     domain: process.env.NEXT_PUBLIC_SITE_URL ? hostOf(site.url) : null,
     apiDomain: process.env.NEXT_PUBLIC_API_URL ? hostOf(site.apiUrl) : null,
     email: site.supportEmail || null,
+    company: site.operator.startsWith('[') ? null : site.operator,
+    address: site.address.startsWith('[') ? null : site.address,
   }
 }
 
-/** Fills [DOMAIN], [API-DOMAIN] and [EMAIL] where configured; leaves them otherwise. */
+/** Fills [DOMAIN], [API-DOMAIN], [EMAIL], [COMPANY] and [ADDRESS] where configured; leaves them otherwise. */
 export function fillPlaceholders(text: string, values: Placeholders): string {
   let out = text
   if (values.apiDomain) out = out.split('[API-DOMAIN]').join(values.apiDomain)
   if (values.domain) out = out.split('[DOMAIN]').join(values.domain)
   if (values.email) out = out.split('[EMAIL]').join(values.email)
+  if (values.company) out = out.split('[COMPANY]').join(values.company)
+  if (values.address) out = out.split('[ADDRESS]').join(values.address)
   return out
 }
 
@@ -114,19 +122,67 @@ export function readDoc(file: string, values: Placeholders = sitePlaceholders())
   return { meta, body: fillPlaceholders(stripComments(body), values).trim() + '\n' }
 }
 
+/** One `##` section of a document page, for the contents list and the page body. */
+export interface Section {
+  id: string
+  /** The heading as plain text. */
+  title: string
+  /** The section body as HTML, without its heading. */
+  html: string
+}
+
 export interface Page {
   title: string
   description: string
+  /** The whole body as HTML. */
   html: string
+  /** HTML before the first `##` heading. */
+  intro: string
+  sections: Section[]
   meta: Record<string, string>
+}
+
+/** A heading's anchor: lower case, letters and digits, words joined by hyphens. */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[`*_]/g, '')
+    .replace(/&[a-z]+;/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/** Splits a markdown body at its `## ` headings (outside fenced code). */
+export function splitSections(markdown: string): { intro: string; sections: Section[] } {
+  const lines = markdown.split('\n')
+  const chunks: { title: string | null; lines: string[] }[] = [{ title: null, lines: [] }]
+  let fenced = false
+  for (const line of lines) {
+    if (/^(```|~~~)/.test(line)) fenced = !fenced
+    const h = !fenced && /^## (.+?)\s*#*\s*$/.exec(line)
+    if (h) chunks.push({ title: h[1], lines: [] })
+    else chunks[chunks.length - 1].lines.push(line)
+  }
+  const used = new Map<string, number>()
+  const sections = chunks.slice(1).map((c) => {
+    const title = c.title!.replace(/[`*_]/g, '')
+    let id = slugify(title) || 'section'
+    const n = used.get(id) ?? 0
+    used.set(id, n + 1)
+    if (n > 0) id = `${id}-${n + 1}`
+    return { id, title, html: renderMarkdown(c.lines.join('\n')) }
+  })
+  return { intro: renderMarkdown(chunks[0].lines.join('\n')), sections }
 }
 
 export function loadPage(file: string): Page {
   const { meta, body } = readDoc(file)
+  const markdown = stripTitle(body)
   return {
     title: meta.title ?? '',
     description: meta.description ?? '',
-    html: renderMarkdown(stripTitle(body)),
+    html: renderMarkdown(markdown),
+    ...splitSections(markdown),
     meta,
   }
 }

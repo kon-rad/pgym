@@ -13,18 +13,16 @@ export function PageHead({ label, title, children }: { label: string; title: str
 
 export const DRAFT_LINE = 'DRAFT, not reviewed by a lawyer'
 
-/** Shown on the legal pages until they have had a legal review (card W3). The draft line stays visible. */
-export function DraftNotice({ updated }: { updated: string }) {
+/**
+ * The first line of both legal drafts (copy/pgym-privacy-policy-draft.md and
+ * copy/pgym-terms-draft.md), kept visible on /privacy and /terms until a lawyer
+ * has reviewed them.
+ */
+export function DraftNotice() {
   return (
-    <>
-      <p className="draft-flag" role="note">
-        {DRAFT_LINE}
-      </p>
-      <p className="notice">
-      Last updated {updated}. This is a plain-language version written before launch. It will be reviewed before
-      PGYM is in the App Store, and any change is posted here with a new date.
-      </p>
-    </>
+    <p className="draft-flag" role="note">
+      {DRAFT_LINE}
+    </p>
   )
 }
 

@@ -31,11 +31,9 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
   if (!page) notFound()
   const date = page.meta.date && !page.meta.date.startsWith('[') ? page.meta.date : 'Draft'
   return (
-    <MarkdownPage label="Blog" page={page}>
+    <MarkdownPage label={`${date} · By ${page.meta.author || 'PGYM'}`} page={page} toc={false}>
       <p className="page-meta">
-        <span className="label">By {page.meta.author || 'PGYM'}</span>
-        <span className="label">{date}</span>
-        <Link className="label" href="/blog">
+        <Link className="arrow-link" href="/blog">
           All posts
         </Link>
       </p>
