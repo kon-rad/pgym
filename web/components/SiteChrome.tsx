@@ -16,6 +16,22 @@ export function SiteHeader() {
   )
 }
 
+// pgym-landing-pages.md, home section 11: Guide, Blog, Agents, GitHub, Privacy,
+// Terms, Support, contact email. Open source, the skill file and account
+// deletion are linked here too, so every page is one tap from any other.
+export const FOOTER_LINKS: [href: string, text: string][] = [
+  ['/guide', 'Guide'],
+  ['/blog', 'Blog'],
+  ['/agents', 'Agents'],
+  ['/skill.md', 'skill.md'],
+  ['/open-source', 'Open source'],
+  [site.githubUrl, 'GitHub'],
+  ['/privacy', 'Privacy'],
+  ['/terms', 'Terms'],
+  ['/support', 'Support'],
+  ['/delete-account', 'Delete your account'],
+]
+
 export function SiteFooter() {
   const mail = mailto()
   const year = new Date().getFullYear()
@@ -29,21 +45,15 @@ export function SiteFooter() {
           </div>
           <nav aria-label="Footer">
             <ul className="footer-links">
-              <li>
-                <a href={site.githubUrl}>GitHub</a>
-              </li>
-              <li>
-                <Link href="/privacy">Privacy</Link>
-              </li>
-              <li>
-                <Link href="/terms">Terms</Link>
-              </li>
-              <li>
-                <Link href="/support">Support</Link>
-              </li>
-              <li>
-                <Link href="/delete-account">Delete your account</Link>
-              </li>
+              {FOOTER_LINKS.map(([href, text]) => (
+                <li key={href}>
+                  {href.startsWith('/') && !href.endsWith('.md') ? (
+                    <Link href={href}>{text}</Link>
+                  ) : (
+                    <a href={href}>{text}</a>
+                  )}
+                </li>
+              ))}
               {mail && (
                 <li>
                   <a href={mail}>{site.supportEmail}</a>

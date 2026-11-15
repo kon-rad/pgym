@@ -88,7 +88,15 @@ const PAGES: [path: string, mustContain: string][] = [
   ['/support', 'Support'],
   ['/delete-account', 'Delete your account'],
   ['/proof/abc123', 'Shared proofs open here soon.'],
+  ['/guide', 'How to use PGYM'],
+  ['/blog', 'Why proof of gym'],
+  ['/blog/why-proof-of-gym', 'Most of training is showing up.'],
+  ['/agents', 'For your agent'],
+  ['/open-source', 'Open source'],
 ]
+
+// Footer links every page carries (pgym-landing-pages.md, home section 11).
+const FOOTER = ['/guide', '/blog', '/agents', '/skill.md', '/open-source', '/privacy', '/terms', '/support', '/delete-account']
 
 describe('built app', () => {
   it.each(PAGES)('GET %s returns 200 with its page', async (path, text) => {
@@ -97,6 +105,51 @@ describe('built app', () => {
     expect(res.headers.get('content-type')).toContain('text/html')
     const html = await res.text()
     expect(html).toContain(text)
+  })
+
+  it.each(PAGES.map(([path]) => path))('%s links every footer page', async (path) => {
+    const html = await (await fetch(base + path)).text()
+    const footer = html.slice(html.indexOf('<footer'))
+    for (const href of FOOTER) expect(footer).toContain(`href="${href}"`)
+    expect(footer).toContain('href="https://github.com/kon-rad/pgym"')
+  })
+
+  it('serves /skill.md as markdown with its skill frontmatter', async () => {
+    const res = await fetch(`${base}/skill.md`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/markdown')
+    const text = await res.text()
+    expect(text.startsWith('---\nname: pgym\ndescription: ')).toBe(true)
+    expect(text).not.toContain('<!--')
+  })
+
+  it('an unknown blog post is a 404', async () => {
+    const res = await fetch(`${base}/blog/no-such-post`)
+    expect(res.status).toBe(404)
+  })
+
+  it.each(['/privacy', '/terms'])('%s keeps the draft line visible', async (path) => {
+    const html = await (await fetch(base + path)).text()
+    expect(html).toContain('DRAFT, not reviewed by a lawyer')
+  })
+
+  it('home page shows the stamped proof card and the log, photo, card sequence', async () => {
+    const html = await (await fetch(`${base}/`)).text()
+    expect(html).toContain('viewBox="0 0 1080 1350"')
+    expect(html).toContain('pc-stamp-animate')
+    expect(html).toContain('>7 WEEKS RUNNING<')
+    expect(html).toContain('ld-frame-log')
+    expect(html).toContain('ld-frame-photo')
+    expect(html).toContain('ld-frame-card')
+    expect(html).toContain('href="/open-source"')
+    expect(html).toContain('href="/agents"')
+  })
+
+  it('home page copy stays positive', async () => {
+    const html = (await (await fetch(`${base}/`)).text()).toLowerCase()
+    for (const phrase of ['broke your streak', 'break your streak', 'lost your streak', "don't break", 'you failed', 'shame']) {
+      expect(html).not.toContain(phrase)
+    }
   })
 
   it('home page shows the waitlist form while the app is not live', async () => {
