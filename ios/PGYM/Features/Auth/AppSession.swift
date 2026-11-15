@@ -158,7 +158,8 @@ final class AppSession {
         if AgePolicy.age(birthYear: birthYear, currentYear: currentYear) < AgePolicy.minimumAge {
             return .underMinimumAge
         }
-        return .main
+        // No weekly goal yet: onboarding was never finished (or the app was quit during it).
+        return profile?.needsOnboarding == true ? .onboarding : .main
     }
 
     // MARK: A5
@@ -180,7 +181,7 @@ final class AppSession {
             try await users.setBirthYear(year, uid: user.uid)
             existing.birthYear = year
             profile = existing
-            route = .main
+            route = existing.needsOnboarding ? .onboarding : .main
             return
         }
 
@@ -198,12 +199,32 @@ final class AppSession {
             ? UserProfile(uid: user.uid, displayName: draft.displayName, email: draft.email, birthYear: year, createdAt: .now)
             : (try? await users.fetchProfile(uid: user.uid)) ?? UserProfile(uid: user.uid, birthYear: year)
         verificationSentTo = nil
-        route = createdNow ? .onboarding : .main
+        // A new document has no goal yet, so this is onboarding; another device's may have one.
+        route = Self.route(for: profile, currentYear: currentYear())
     }
 
-    /// Onboarding (card I3) calls this after B5.
-    func finishOnboarding() {
-        guard route == .onboarding else { return }
+    /// The units B5 starts on: the phone's region (`NewUserProfile.Units.default`), or what the
+    /// document already says.
+    var startingUnits: NewUserProfile.Units { profile?.units ?? units }
+
+    /// The time zone that decides which week a session falls in.
+    var userTimezone: String { timezone }
+
+    /// Onboarding's last step. Writes the answers to `users/{uid}` and the starter routines,
+    /// then opens the tabs. Throws (and stays on onboarding) if the write fails; Firestore's
+    /// offline cache normally accepts the write without a connection.
+    func completeOnboarding(_ settings: OnboardingSettings, routines: [RoutineDraft]) async throws {
+        guard let user, route == .onboarding else { return }
+        try await users.saveOnboarding(settings, uid: user.uid)
+        if !routines.isEmpty {
+            try await users.saveRoutines(routines, uid: user.uid)
+        }
+        var updated = profile ?? UserProfile(uid: user.uid)
+        updated.goalPerWeek = settings.plan.goal
+        updated.gymDays = settings.plan.orderedDays
+        updated.reminderTime = settings.plan.time
+        updated.units = settings.units
+        profile = updated
         route = .main
     }
 

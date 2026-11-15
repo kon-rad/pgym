@@ -36,6 +36,10 @@ protocol UserRepository: AnyObject {
     func createProfileIfMissing(_ profile: NewUserProfile) async throws -> Bool
     /// Fills in a missing birth year on an existing document.
     func setBirthYear(_ year: Int, uid: String) async throws
+    /// Onboarding's answers: goal, gym days, reminder time, units, time zone. A merge write.
+    func saveOnboarding(_ settings: OnboardingSettings, uid: String) async throws
+    /// Writes routines under `users/{uid}/routines/{id}`. Fixed IDs, so a retry overwrites.
+    func saveRoutines(_ routines: [RoutineDraft], uid: String) async throws
 }
 
 /// The callable Cloud Functions sign-in needs (pgym-architecture.md, "Functions").

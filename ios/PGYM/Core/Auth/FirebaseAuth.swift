@@ -187,8 +187,27 @@ final class FirestoreUserRepository: UserRepository {
             displayName: data["displayName"] as? String,
             email: data["email"] as? String,
             birthYear: (data["birthYear"] as? NSNumber)?.intValue,
-            createdAt: (data["createdAt"] as? Timestamp)?.dateValue()
+            createdAt: (data["createdAt"] as? Timestamp)?.dateValue(),
+            goalPerWeek: (data["goalPerWeek"] as? NSNumber)?.intValue,
+            gymDays: (data["gymDays"] as? [String])?.compactMap(Weekday.init(rawValue:)),
+            reminderTime: (data["reminderTime"] as? String).flatMap(ReminderTime.init(string:)),
+            units: (data["units"] as? String).flatMap(NewUserProfile.Units.init(rawValue:)),
+            streakWeeks: (data["streakWeeks"] as? NSNumber)?.intValue,
+            proofCount: (data["proofCount"] as? NSNumber)?.intValue
         )
+    }
+
+    func saveOnboarding(_ settings: OnboardingSettings, uid: String) async throws {
+        try await document(uid).setData(settings.firestoreFields, merge: true)
+    }
+
+    func saveRoutines(_ routines: [RoutineDraft], uid: String) async throws {
+        let batch = db.batch()
+        for routine in routines {
+            let ref = document(uid).collection("routines").document(routine.id)
+            batch.setData(routine.firestoreFields, forDocument: ref)
+        }
+        try await batch.commit()
     }
 
     func createProfileIfMissing(_ profile: NewUserProfile) async throws -> Bool {

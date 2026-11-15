@@ -189,6 +189,29 @@ final class FakeUserRepository: UserRepository {
         birthYearUpdates.append((uid, year))
         documents[uid, default: UserProfile(uid: uid)].birthYear = year
     }
+
+    /// Every onboarding write, in order.
+    private(set) var onboardingWrites: [(uid: String, settings: OnboardingSettings)] = []
+    /// `users/{uid}/routines`, by uid then routine ID.
+    private(set) var routines: [String: [String: RoutineDraft]] = [:]
+
+    func saveOnboarding(_ settings: OnboardingSettings, uid: String) async throws {
+        try failIfAsked()
+        onboardingWrites.append((uid, settings))
+        var doc = documents[uid, default: UserProfile(uid: uid)]
+        doc.goalPerWeek = settings.plan.goal
+        doc.gymDays = settings.plan.orderedDays
+        doc.reminderTime = settings.plan.time
+        doc.units = settings.units
+        documents[uid] = doc
+    }
+
+    func saveRoutines(_ routines: [RoutineDraft], uid: String) async throws {
+        try failIfAsked()
+        for routine in routines {
+            self.routines[uid, default: [:]][routine.id] = routine
+        }
+    }
 }
 
 @MainActor
