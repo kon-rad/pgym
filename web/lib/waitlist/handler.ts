@@ -1,5 +1,6 @@
 import { clientIp, type RateLimiter } from './rate-limit'
 import type { WaitlistStore } from './store'
+import { MESSAGES, type Outcome } from './messages'
 import { normalizeEmail, normalizeSource } from './validate'
 
 export interface WaitlistDeps {
@@ -13,15 +14,7 @@ export interface WaitlistDeps {
 export const WAITLIST_LIMIT = 5
 export const WAITLIST_WINDOW_MS = 60_000
 
-export const MESSAGES = {
-  joined: 'You are on the list. We email you once, when PGYM is in the App Store.',
-  invalid: 'That email does not look right. Check it and try again.',
-  limited: 'Too many tries from here. Wait a minute and try again.',
-  unavailable: 'The list is not taking signups right now. Try again later.',
-  badRequest: 'Send an email address.',
-} as const
-
-type Outcome = 'joined' | 'invalid' | 'limited' | 'unavailable' | 'badRequest'
+export { MESSAGES }
 
 const STATUS: Record<Outcome, number> = {
   joined: 200,
