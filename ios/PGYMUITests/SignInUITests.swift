@@ -42,6 +42,18 @@ final class SignInUITests: XCTestCase {
         year.typeText("1990")
         app.buttons["a5.continue"].tap()
 
+        // Onboarding (card I3): B1 goal, B2 days (pre-filled to match), B3 skip, B4 starter.
+        XCTAssertTrue(element(app, "screen.B1").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["b1.lockIn"].isEnabled, "no goal is pre-selected")
+        app.buttons["b1.goal.3"].tap()
+        app.buttons["b1.lockIn"].tap()
+        XCTAssertTrue(element(app, "screen.B2").waitForExistence(timeout: 5))
+        app.buttons["b2.continue"].tap()
+        XCTAssertTrue(element(app, "screen.B3").waitForExistence(timeout: 5))
+        app.buttons["b3.skip"].tap()
+        XCTAssertTrue(element(app, "screen.B4").waitForExistence(timeout: 5))
+        app.buttons["b4.use"].tap()
+
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
         tabBar.buttons["Profile"].tap()

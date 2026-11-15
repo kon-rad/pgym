@@ -79,3 +79,26 @@ To use the real providers:
 3. **Email:** enable Email/Password in Firebase Authentication. Verification and reset emails use Firebase's templates.
 
 The minimum age (`AgePolicy.minimumAge`, 13) and the password length (`PasswordPolicy.minimumLength`, 8) are placeholders for open decisions.
+
+## Onboarding and reminders (card I3)
+
+Views B1 Weekly goal, B2 Gym days and time, B3 Reminders, B4 First routine, and B5 Units (the one-tap chip on B1, as `pgym-flow-spec.md` merges it). `AppSession` routes a signed-in user whose `users/{uid}` has no `goalPerWeek` to onboarding, so quitting mid-way resumes there; the answers so far are kept on the phone per step.
+
+| Piece | Where |
+|---|---|
+| Weekdays, ISO week keys, the plan, "a goal change starts next Monday" (`PlanSchedule`) | `PGYM/Core/Models/TrainingPlan.swift` |
+| B4's three starters (exercise IDs for card I4's catalogue; sets and reps await trainer review) | `PGYM/Core/Models/StarterRoutines.swift` |
+| `ReminderPlanner`: pure function from plan, sessions and ignored count to the notifications that should be pending; all reminder copy | `PGYM/Core/Notifications/Notifications.swift` |
+| `ReminderScheduler`: hands the plan to iOS, cancels a day once a session is logged, counts ignored reminders, backs off after 5 | `PGYM/Core/Notifications/ReminderScheduler.swift` |
+| Screens and their view model | `PGYM/Features/Onboarding/` |
+
+What onboarding writes to `users/{uid}` (a merge): `goalPerWeek`, `gymDays` (`["mon", "wed", "fri"]`), `reminderTime` (`"18:00"`), `units`, `timezone`. The chosen starter goes to `users/{uid}/routines/{starter-...}`.
+
+Reminder rules, all local:
+
+- One reminder per gym day at the chosen time; none on rest days, none once a session (or a draft) is logged that day, none once the week's goal is reached.
+- Sunday 18:00 nudge only when the week is exactly one session short, and not if Sunday is a gym day with its own reminder.
+- After 5 reminders in a row go unopened, daily reminders and the nudge pause and a "New week" line goes out on Mondays at the reminder time. Opening any PGYM notification or logging a session brings the daily ones back. The back-off is planned six weeks ahead, so it also works while the app stays closed.
+- Goal and gym-day changes apply from next Monday; a new time applies at once.
+
+For cards I5 and I7: call `services.reminders.sessionLogged(at: startedAt, countsTowardWeek: false)` when a draft starts and `sessionLogged(at: startedAt)` when the session is stamped. Card I8's F4 calls `changePlan(_:)` and writes the same fields with `UserRepository.saveOnboarding`.

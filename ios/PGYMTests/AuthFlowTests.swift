@@ -75,17 +75,17 @@ final class AuthFlowTests: XCTestCase {
         try await session.submitBirthYear(1990)
         XCTAssertEqual(users.createCalls, 1)
 
-        // Sign out and back in: returning user, no second document.
+        // Sign out and back in before onboarding: no second document, and onboarding resumes.
         try session.signOut()
         try await session.signIn(email: "new@example.com", password: "longenough")
-        XCTAssertEqual(session.route, .main)
+        XCTAssertEqual(session.route, .onboarding)
         XCTAssertEqual(users.created.count, 1)
     }
 
     /// A user whose document has a birth year goes straight to the tabs: no A5, no onboarding.
     func testReturningUserSkipsOnboarding() async throws {
         let account = auth.addEmailAccount(email: "back@example.com", password: "longenough")
-        users.seed(UserProfile(uid: account.uid, displayName: "Back", email: account.email, birthYear: 1988, createdAt: .now))
+        users.seed(UserProfile(uid: account.uid, displayName: "Back", email: account.email, birthYear: 1988, createdAt: .now, goalPerWeek: 3))
 
         try await session.signIn(email: "back@example.com", password: "longenough")
 
@@ -98,7 +98,7 @@ final class AuthFlowTests: XCTestCase {
     /// A returning user restored from the keychain at launch also skips onboarding.
     func testRestoredSessionAtLaunchSkipsOnboarding() async {
         let user = AuthUser(uid: "kept", email: "kept@example.com", providers: [.google])
-        fixture = Fixture(currentUser: user, seed: [UserProfile(uid: "kept", birthYear: 1995)])
+        fixture = Fixture(currentUser: user, seed: [UserProfile(uid: "kept", birthYear: 1995, goalPerWeek: 3)])
 
         XCTAssertEqual(session.route, .launching)
         await session.start()
@@ -108,7 +108,7 @@ final class AuthFlowTests: XCTestCase {
     /// A document without a birth year routes to A5; saving fills in the year on that document
     /// and goes to the tabs, without creating a new one.
     func testMissingBirthYearRoutesToYearOfBirth() async throws {
-        users.seed(UserProfile(uid: auth.googleUser.uid, displayName: "Sam", email: auth.googleUser.email, birthYear: nil))
+        users.seed(UserProfile(uid: auth.googleUser.uid, displayName: "Sam", email: auth.googleUser.email, birthYear: nil, goalPerWeek: 3))
 
         try await session.signInWithGoogle()
         XCTAssertEqual(session.route, .yearOfBirth)
@@ -140,7 +140,7 @@ final class AuthFlowTests: XCTestCase {
     /// Delete account calls `deleteAccount`, signs out, and A1 shows "Your account is deleted."
     func testDeleteAccountCallsFunctionAndSignsOut() async throws {
         let account = auth.addEmailAccount(email: "gone@example.com", password: "longenough")
-        users.seed(UserProfile(uid: account.uid, birthYear: 1990))
+        users.seed(UserProfile(uid: account.uid, birthYear: 1990, goalPerWeek: 3))
         try await session.signIn(email: "gone@example.com", password: "longenough")
         XCTAssertEqual(session.route, .main)
 
@@ -158,7 +158,7 @@ final class AuthFlowTests: XCTestCase {
 
     /// Apple users re-authenticate with Apple; the fresh code revokes the token before the function runs.
     func testDeleteAppleAccountRevokesAppleTokenThenCallsFunction() async throws {
-        users.seed(UserProfile(uid: auth.appleUser.uid, birthYear: 1990))
+        users.seed(UserProfile(uid: auth.appleUser.uid, birthYear: 1990, goalPerWeek: 3))
         try await session.signInWithApple(AppleSignInCredential(idToken: "t1", rawNonce: "n1", authorizationCode: "c1", fullName: nil))
         XCTAssertTrue(session.deletionNeedsAppleReauth)
 
@@ -184,7 +184,7 @@ final class AuthFlowTests: XCTestCase {
     /// If the function fails, nothing changes on the phone: still signed in, on the tabs.
     func testDeleteAccountFailureKeepsUserSignedIn() async throws {
         let account = auth.addEmailAccount(email: "stay@example.com", password: "longenough")
-        users.seed(UserProfile(uid: account.uid, birthYear: 1990))
+        users.seed(UserProfile(uid: account.uid, birthYear: 1990, goalPerWeek: 3))
         try await session.signIn(email: "stay@example.com", password: "longenough")
         functions.nextError = URLError(.notConnectedToInternet)
 
@@ -203,7 +203,7 @@ final class AuthFlowTests: XCTestCase {
     /// F7's view model: DELETE must be typed; then it calls through to the session.
     func testDeleteViewModelNeedsTypedConfirmation() async {
         let account = auth.addEmailAccount(email: "vm@example.com", password: "longenough")
-        users.seed(UserProfile(uid: account.uid, birthYear: 1990))
+        users.seed(UserProfile(uid: account.uid, birthYear: 1990, goalPerWeek: 3))
         try? await session.signIn(email: "vm@example.com", password: "longenough")
         let model = DeleteAccountViewModel()
 
@@ -218,7 +218,7 @@ final class AuthFlowTests: XCTestCase {
     }
 
     func testDeleteViewModelAsksAppleUsersToSignInAgain() async throws {
-        users.seed(UserProfile(uid: auth.appleUser.uid, birthYear: 1990))
+        users.seed(UserProfile(uid: auth.appleUser.uid, birthYear: 1990, goalPerWeek: 3))
         try await session.signInWithApple(AppleSignInCredential(idToken: "t", rawNonce: "n", authorizationCode: "c", fullName: nil))
         let model = DeleteAccountViewModel()
         model.confirmation = "DELETE"
@@ -236,7 +236,7 @@ final class AuthFlowTests: XCTestCase {
 
     func testSignOutReturnsToWelcome() async throws {
         let account = auth.addEmailAccount(email: "out@example.com", password: "longenough")
-        users.seed(UserProfile(uid: account.uid, birthYear: 1990))
+        users.seed(UserProfile(uid: account.uid, birthYear: 1990, goalPerWeek: 3))
         try await session.signIn(email: "out@example.com", password: "longenough")
 
         try session.signOut()
@@ -264,7 +264,7 @@ final class AuthFlowTests: XCTestCase {
 
     func testProfileReadFailureShowsRetryThenRecovers() async throws {
         let account = auth.addEmailAccount(email: "flaky@example.com", password: "longenough")
-        users.seed(UserProfile(uid: account.uid, birthYear: 1990))
+        users.seed(UserProfile(uid: account.uid, birthYear: 1990, goalPerWeek: 3))
         users.nextError = URLError(.notConnectedToInternet)
 
         try await session.signIn(email: "flaky@example.com", password: "longenough")
@@ -277,7 +277,9 @@ final class AuthFlowTests: XCTestCase {
     func testRouteForProfile() {
         XCTAssertEqual(AppSession.route(for: nil, currentYear: year), .yearOfBirth)
         XCTAssertEqual(AppSession.route(for: UserProfile(uid: "a"), currentYear: year), .yearOfBirth)
-        XCTAssertEqual(AppSession.route(for: UserProfile(uid: "a", birthYear: 1990), currentYear: year), .main)
+        XCTAssertEqual(AppSession.route(for: UserProfile(uid: "a", birthYear: 1990, goalPerWeek: 3), currentYear: year), .main)
+        XCTAssertEqual(AppSession.route(for: UserProfile(uid: "a", birthYear: 1990), currentYear: year), .onboarding,
+                       "no weekly goal yet: onboarding was not finished")
         XCTAssertEqual(AppSession.route(for: UserProfile(uid: "a", birthYear: year - 5), currentYear: year), .underMinimumAge)
     }
 
