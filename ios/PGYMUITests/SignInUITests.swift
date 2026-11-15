@@ -33,8 +33,8 @@ final class SignInUITests: XCTestCase {
         email.typeText("ui@example.com")
         let password = app.secureTextFields["auth.password"]
         password.tap()
-        password.typeText("longenough")
-        app.buttons["auth.submit"].tap()
+        // Return submits (the field's onSubmit), so the button under the keyboard is never needed.
+        password.typeText("longenough\n")
 
         XCTAssertTrue(element(app, "screen.A5").waitForExistence(timeout: 5))
         let year = app.textFields["a5.year"]
@@ -53,7 +53,7 @@ final class SignInUITests: XCTestCase {
         XCTAssertFalse(deleteButton.isEnabled, "DELETE must be typed first")
         let confirm = app.textFields["f7.confirm"]
         confirm.tap()
-        confirm.typeText("DELETE")
+        confirm.typeText("DELETE\n") // return closes the keyboard so the button is reachable
         deleteButton.tap()
 
         XCTAssertTrue(element(app, "screen.A1").waitForExistence(timeout: 5))

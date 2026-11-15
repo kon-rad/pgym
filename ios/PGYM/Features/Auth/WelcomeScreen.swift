@@ -161,6 +161,7 @@ struct WelcomeScreen: View {
         }
         .padding(.horizontal, Spacing.grid(4))
         .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Color.iron))
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("auth.accountDeleted")
     }
 
