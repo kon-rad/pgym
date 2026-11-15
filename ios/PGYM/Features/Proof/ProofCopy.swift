@@ -16,8 +16,9 @@ enum ProofCopy {
     static let cameraHint = "One photo. This is the one on your card."
     static let timerOn = "3 s"
     static let timerOff = "Off"
-    static let shutterLabel = "Take photo"
-    static let shutterTimerLabel = "Take photo in 3 seconds"
+    // pgym-flow-spec.md, "Accessibility": the shutter reads "Take proof photo".
+    static let shutterLabel = "Take proof photo"
+    static let shutterTimerLabel = "Take proof photo in 3 seconds"
     static let switchCameraLabel = "Switch camera"
     static let closeCameraLabel = "Close camera"
     static let cameraBusy = "The camera is busy. Close other camera apps and try again."
@@ -43,6 +44,13 @@ enum ProofCopy {
     static let retakeHint = "A retake replaces this photo. It is still one proof."
     static let stampIt = "Stamp it"
     static let renderFailed = "Could not make the card. Try again."
+    /// VoiceOver for the size buttons: "4:5" is read as a ratio, not a time.
+    static func sizeLabel(_ size: ProofCardSize) -> String {
+        switch size {
+        case .feed: "Feed size, 4 by 5"
+        case .story: "Story size, 9 by 16"
+        }
+    }
 
     // D9 Stamping strings live in StampCopy (card I7).
 

@@ -62,4 +62,8 @@ enum StampCopy {
     /// row string; it uses D10's title and main button, so no new copy is invented.
     static let consentRowTitle = "Physique score"
     static let consentRowAction = "Turn on the score"
+
+    // VoiceOver for the stamp (pgym-flow-spec.md, "Accessibility"), card I9.
+    static func a11yStamped(number: Int, timestamp: String) -> String { "Proof \(number), stamped \(timestamp)" }
+    static let a11yPending = "Proof pending, will stamp when online"
 }

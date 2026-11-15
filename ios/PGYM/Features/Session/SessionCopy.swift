@@ -88,6 +88,12 @@ enum SessionCopy {
     static let a11yCopyToNext = "Copy to next set"
     static let a11ySetDetail = "Set detail"
     static let a11yDeleteSet = "Delete set"
+    // Card I9 accessibility pass.
+    static func a11yElapsed(_ spoken: String) -> String { "Session time, \(spoken)" }
+    static let a11yMakeCurrentHint = "Opens this exercise to log its sets."
+    static let a11yMinus15 = "Rest 15 seconds less"
+    static let a11yPlus15 = "Rest 15 seconds more"
+    static let a11ySkipRest = "Skip rest"
 
     // MARK: Keypad
     static func keypadWeightHeader(_ unit: WeightUnit) -> String { "Weight, \(unit.rawValue)" }

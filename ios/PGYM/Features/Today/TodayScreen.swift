@@ -96,13 +96,24 @@ struct TodayScreen: View {
 
     // MARK: Header
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// A row that stacks at the accessibility text sizes, so nothing is squeezed off the side.
+    private func rowLayout<Content: View>(alignment: VerticalAlignment, @ViewBuilder content: () -> Content) -> some View {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.grid(2)))
+            : AnyLayout(HStackLayout(alignment: alignment))
+        return layout(content)
+    }
+
     private func header(_ model: TodayModel) -> some View {
         VStack(alignment: .leading, spacing: Spacing.grid(3)) {
-            HStack(alignment: .center) {
+            rowLayout(alignment: .center) {
                 Text(Date.now.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).uppercased())
                     .pgymText(.label)
                     .foregroundStyle(Color.steel)
-                Spacer()
+                    .accessibilityLabel(Date.now.formatted(date: .complete, time: .omitted))
+                if !typeSize.isAccessibilitySize { Spacer() }
                 if let text = model.streakStampText {
                     streakStamp(text)
                 }
@@ -144,9 +155,9 @@ struct TodayScreen: View {
 
     private func weekSection(_ model: TodayModel) -> some View {
         VStack(alignment: .leading, spacing: Spacing.grid(3)) {
-            HStack(alignment: .firstTextBaseline) {
+            rowLayout(alignment: .firstTextBaseline) {
                 SectionLabel(TodayCopy.thisWeek)
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
                 if model.weekRow.goal > 0 {
                     Text(model.freshStart
                          ? TodayCopy.newWeek(goal: model.weekRow.goal)
@@ -157,13 +168,12 @@ struct TodayScreen: View {
                         .accessibilityIdentifier("c1.count")
                 }
             }
-            HStack(spacing: 0) {
-                ForEach(model.weekRow.days, id: \.weekday) { day in
-                    DayRing(day: String(day.weekday.short.prefix(1)), state: day.status)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel("\(day.weekday.full), \(Self.spoken(day.status))")
-                }
-            }
+            WeekRings(
+                days: model.weekRow.days.map { (day: $0.weekday, status: $0.status) },
+                count: model.weekRow.count,
+                goal: model.weekRow.goal,
+                identifier: "c1.rings"
+            )
             if model.streak.passWeeks > 0 {
                 Text(TodayCopy.passWeeks(model.streak.passWeeks))
                     .pgymText(.label)
@@ -173,15 +183,6 @@ struct TodayScreen: View {
         .padding(.vertical, Spacing.grid(2))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("c1.week")
-    }
-
-    private static func spoken(_ status: DayRing.Status) -> String {
-        switch status {
-        case .done: "trained"
-        case .today: "today"
-        case .planned: "gym day"
-        case .rest: "rest day"
-        }
     }
 
     // MARK: State card

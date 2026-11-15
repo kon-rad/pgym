@@ -120,7 +120,9 @@ struct ProofFlowView: View {
     }
 
     private func start() {
-        let first = ProofFeature.firstStep(sessionID: session.id, store: store)
+        // The Debug-only UI-test camera needs no permission (UITestCamera.swift).
+        let permission: CameraPermission = UITestCamera.isOn ? .granted : .current
+        let first = ProofFeature.firstStep(sessionID: session.id, store: store, permission: permission)
         if first == .saved {
             step = .saved
             onFinished(store.record(session.id)?.stampTappedAt ?? .now)
@@ -128,7 +130,7 @@ struct ProofFlowView: View {
         }
         if first == .editor {
             guard let saved = store.loadPhoto(session.id) else {
-                step = CameraPermission.current == .granted ? .camera : .permission(CameraPermission.current)
+                step = permission == .granted ? .camera : .permission(permission)
                 return
             }
             photo = saved

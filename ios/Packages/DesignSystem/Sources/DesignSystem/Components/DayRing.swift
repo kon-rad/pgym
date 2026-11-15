@@ -25,12 +25,18 @@ public struct DayRing: View {
         self.state = state
     }
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     public var body: some View {
         VStack(spacing: Spacing.grid(2)) {
             ring.frame(width: Self.diameter, height: Self.diameter)
-            Text(day)
-                .pgymText(.label, size: 10)
-                .foregroundStyle(state == .today ? Color.chalk : Color.steel)
+            // At the accessibility sizes the letters hide and the "3 OF 4 THIS WEEK" line carries the
+            // meaning (pgym-flow-spec.md); a letter at that size would not fit a seventh of the row.
+            if !typeSize.isAccessibilitySize {
+                Text(day)
+                    .pgymText(.label, size: 10)
+                    .foregroundStyle(state == .today ? Color.chalk : Color.steel)
+            }
         }
         .frame(minWidth: Spacing.touchTargetMin)
         .accessibilityElement(children: .ignore)

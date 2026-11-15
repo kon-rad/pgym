@@ -1,4 +1,5 @@
 import CoreText
+import SwiftUI
 import XCTest
 import DesignSystem
 
@@ -34,6 +35,15 @@ final class TypeTokenTests: XCTestCase {
     func testDefaultSizesSitInsideTheirRange() {
         for role in TypeRole.allCases {
             XCTAssertTrue(role.sizeRange.contains(role.defaultSize), "\(role)")
+        }
+    }
+
+    /// Anton titles scale one step and then wrap; every other role follows Dynamic Type to the top
+    /// (pgym-flow-spec.md, "Dynamic Type at the largest size").
+    func testOnlyDisplayTitlesStopScalingEarly() {
+        XCTAssertEqual(TypeRole.display.maxDynamicTypeSize, .xLarge)
+        for role in TypeRole.allCases where role != .display {
+            XCTAssertEqual(role.maxDynamicTypeSize, .accessibility5, "\(role) must scale to Accessibility XXXL")
         }
     }
 
