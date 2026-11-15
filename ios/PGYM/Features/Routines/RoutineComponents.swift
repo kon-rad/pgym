@@ -145,9 +145,5 @@ extension View {
     }
 }
 
-/// Spring for state changes, or none with Reduce Motion. Well under the 600 ms ceiling.
-extension Animation {
-    static func pgymSpring(reduceMotion: Bool) -> Animation? {
-        reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.82)
-    }
-}
+// `Animation.pgymSpring(reduceMotion:)` lives in Features/Auth/AuthComponents.swift (card I2); card I4
+// declared the same helper, and the merge in card I5 keeps one.

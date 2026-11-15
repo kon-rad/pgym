@@ -158,6 +158,8 @@ final class SessionSyncEngine {
     func flush(context: ModelContext, uid: String, now: Date = .now) async throws -> Report {
         var report = Report()
         for session in try Self.pending(in: context) {
+            // Purged by the screen while an earlier write was in flight.
+            if session.isDeleted { continue }
             switch session.status {
             case .stamped:
                 // The proof belongs to the server now; the phone never writes it again.
@@ -177,9 +179,19 @@ final class SessionSyncEngine {
                 do {
                     try await withTimeout { try await self.remote.upsert(document, uid: uid) }
                 } catch {
-                    session.syncFailures += 1
-                    try? context.save()
+                    if !session.isDeleted {
+                        session.syncFailures += 1
+                        try? context.save()
+                    }
                     throw error
+                }
+                if session.isDeleted {
+                    // Discarded and purged on the phone while its first write was in flight: remove
+                    // the copy that just reached Firestore too.
+                    let id = document.id
+                    try await withTimeout { try await self.remote.delete(sessionID: id, uid: uid) }
+                    report.deleted += 1
+                    continue
                 }
                 // Only the version that was written is marked; an edit made during the write stays queued.
                 session.syncedVersion = max(session.syncedVersion, version)
@@ -249,8 +261,8 @@ final class SessionSyncQueue {
 
     private let container: ModelContainer
     @ObservationIgnored private var engine: SessionSyncEngine?
-    @ObservationIgnored private var uid: () -> String?
-    @ObservationIgnored private var isOnline: () -> Bool
+    @ObservationIgnored private var uid: @MainActor () -> String?
+    @ObservationIgnored private var isOnline: @MainActor () -> Bool
     private let sleep: (TimeInterval) async -> Void
     let debounce: TimeInterval
     let retryDelays: [TimeInterval]
@@ -261,8 +273,8 @@ final class SessionSyncQueue {
     init(
         container: ModelContainer,
         engine: SessionSyncEngine?,
-        uid: @escaping () -> String?,
-        isOnline: @escaping () -> Bool = { true },
+        uid: @escaping @MainActor () -> String?,
+        isOnline: @escaping @MainActor () -> Bool = { true },
         debounce: TimeInterval = 1.5,
         retryDelays: [TimeInterval] = [2, 5, 15, 30, 60],
         sleep: @escaping (TimeInterval) async -> Void = { seconds in
@@ -279,7 +291,7 @@ final class SessionSyncQueue {
     }
 
     /// Swaps in Firebase once it is configured and a user is signed in.
-    func configure(engine: SessionSyncEngine?, uid: @escaping () -> String?, isOnline: @escaping () -> Bool) {
+    func configure(engine: SessionSyncEngine?, uid: @escaping @MainActor () -> String?, isOnline: @escaping @MainActor () -> Bool) {
         self.engine = engine
         self.uid = uid
         self.isOnline = isOnline

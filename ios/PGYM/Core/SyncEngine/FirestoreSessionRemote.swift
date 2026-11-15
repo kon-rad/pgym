@@ -53,7 +53,7 @@ final class FirestoreSessionRemote: SessionRemote {
 /// sessions stay queued on the phone and sync once both are true.
 enum SessionSyncSetup {
     @MainActor
-    static func makeQueue(container: ModelContainer, isOnline: @escaping () -> Bool) -> SessionSyncQueue {
+    static func makeQueue(container: ModelContainer, isOnline: @escaping @MainActor () -> Bool) -> SessionSyncQueue {
         #if canImport(FirebaseFirestore)
         let firebaseOn = FirebaseApp.app() != nil
         return SessionSyncQueue(

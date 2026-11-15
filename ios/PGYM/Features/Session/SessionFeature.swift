@@ -1,3 +1,61 @@
-/// The full-screen session, views D1 to D5. Card I5.
-/// Placeholder namespace so the folder from the architecture note exists in the project.
-enum SessionFeature {}
+import SwiftData
+import SwiftUI
+
+/// The full-screen session, views D1 to D5 (card I5). The camera and card (D6 onward) are card I6.
+///
+/// The session cover is driven by the data, not by a flag: whenever a draft that has not ended is on
+/// the phone, D2 is shown over the tabs. So Start session only has to create the draft, and a
+/// session that was open when the app was killed opens again by itself on the next launch.
+enum SessionFeature {
+    /// Starts a session from `routine` (nil for Empty session) and queues it for sync.
+    @MainActor
+    static func start(_ routine: Routine?, context: ModelContext, sync: SessionSyncQueue) {
+        let custom = (try? CustomExerciseStore(context: context).all())?.map(\.exercise) ?? []
+        _ = try? SessionStore(context: context).start(routine: routine, library: ExerciseLibrary(custom: custom))
+        sync.requestSync()
+    }
+}
+
+/// Presents D2 while a draft is open.
+struct SessionHost: ViewModifier {
+    @Query(
+        filter: #Predicate<WorkoutSession> { $0.statusRaw == "draft" && $0.endedAt == nil },
+        sort: \WorkoutSession.startedAt,
+        order: .reverse
+    )
+    private var active: [WorkoutSession]
+
+    @Environment(\.modelContext) private var context
+    @Environment(SessionSyncQueue.self) private var sync
+    @Environment(NetworkMonitor.self) private var network
+
+    func body(content: Content) -> some View {
+        content
+            .fullScreenCover(isPresented: Binding(get: { !active.isEmpty }, set: { _ in })) {
+                Group {
+                    if let session = active.first {
+                        ActiveSessionScreen(session: session)
+                    } else {
+                        Color.ink.ignoresSafeArea()
+                    }
+                }
+                .environment(sync)
+                .environment(network)
+                .modelContext(context)
+                .preferredColorScheme(.dark)
+            }
+            .onChange(of: active.isEmpty) { _, isEmpty in
+                guard isEmpty else { return }
+                // The cover is closing: tidy discarded sessions Firestore never had, once nothing shows them.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    try? SessionStore(context: context).purgeDiscarded()
+                    sync.requestSync()
+                }
+            }
+    }
+}
+
+extension View {
+    /// D2 over this view whenever a session is open.
+    func sessionHost() -> some View { modifier(SessionHost()) }
+}
