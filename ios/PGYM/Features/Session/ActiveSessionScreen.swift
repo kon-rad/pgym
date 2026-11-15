@@ -17,6 +17,8 @@ struct ActiveSessionScreen: View {
     @Environment(\.modelContext) private var context
     @Environment(SessionSyncQueue.self) private var sync
     @Environment(NetworkMonitor.self) private var network
+    /// The signed-in account, for the units chosen in onboarding (B5). Optional so previews run without one.
+    @Environment(AppSession.self) private var account: AppSession?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
@@ -59,7 +61,7 @@ struct ActiveSessionScreen: View {
                 .onChange(of: keypad?.setID) { _, id in
                     // The row being edited sits just above the keypad.
                     guard let id else { return }
-                    withAnimation(.pgymSpring(reduceMotion: reduceMotion)) { proxy.scrollTo(id, anchor: .bottom) }
+                    withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { proxy.scrollTo(id, anchor: .bottom) }
                 }
             }
             if keypad == nil {
@@ -76,10 +78,10 @@ struct ActiveSessionScreen: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .animation(.pgymSpring(reduceMotion: reduceMotion), value: keypad?.field)
-        .animation(.pgymSpring(reduceMotion: reduceMotion), value: keypad == nil)
-        .animation(.pgymSpring(reduceMotion: reduceMotion), value: toast)
-        .animation(.pgymSpring(reduceMotion: reduceMotion), value: session.restEndsAt)
+        .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: keypad?.field)
+        .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: keypad == nil)
+        .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: toast)
+        .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: session.restEndsAt)
         .sensoryFeedback(.impact(weight: .medium), trigger: logTick)
         .sensoryFeedback(.success, trigger: bestTick)
         .sensoryFeedback(.success, trigger: restDoneTick)
@@ -125,7 +127,10 @@ struct ActiveSessionScreen: View {
         .task(id: session.restEndsAt) { await waitForRestEnd() }
         .onChange(of: session.restEndsAt) { _, end in scheduleRestNotification(end) }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { unit = WeightUnit.preferred() }
+            if phase == .active { unit = WeightUnit.preferred(profile: account?.profile?.units) }
+        }
+        .onChange(of: account?.profile?.units, initial: true) { _, units in
+            unit = WeightUnit.preferred(profile: units)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.\(Self.viewID)")
@@ -250,7 +255,7 @@ struct ActiveSessionScreen: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("d2.addExercise")
             }
-            .animation(.pgymSpring(reduceMotion: reduceMotion), value: current?.id)
+            .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: current?.id)
         }
     }
 
@@ -293,7 +298,7 @@ struct ActiveSessionScreen: View {
                     .id(set.id)
                 }
             }
-            .animation(.pgymSpring(reduceMotion: reduceMotion), value: exercise.sets.count)
+            .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: exercise.sets.count)
             Button {
                 act { try store.addSet(to: exercise) }
             } label: {

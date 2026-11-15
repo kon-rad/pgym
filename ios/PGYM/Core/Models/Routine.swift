@@ -86,7 +86,8 @@ final class Routine {
     }
 }
 
-/// An exercise the user added in D3 that is not in the catalogue. Local for now; see RESULT of card I4.
+/// An exercise the user added in D3 that is not in the catalogue. Stored on the phone; it reaches
+/// other phones inside the routines that use it (see `RoutineDocument.Entry`).
 @Model
 final class CustomExercise {
     @Attribute(.unique) var id: String
@@ -102,6 +103,15 @@ final class CustomExercise {
         self.name = name
         self.muscleGroupRaw = muscleGroup.rawValue
         self.equipmentRaw = equipment.rawValue
+        self.createdAt = now
+    }
+
+    /// Recreates a custom exercise that came from another phone, keeping its ID.
+    init(exercise: Exercise, now: Date = .now) {
+        self.id = exercise.id
+        self.name = exercise.name
+        self.muscleGroupRaw = exercise.muscleGroup.rawValue
+        self.equipmentRaw = exercise.equipment.rawValue
         self.createdAt = now
     }
 

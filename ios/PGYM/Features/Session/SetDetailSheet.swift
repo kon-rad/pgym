@@ -60,7 +60,7 @@ struct SetDetailSheet: View {
                 HStack(spacing: Spacing.grid(2)) {
                     ForEach([SetType.working, SetType.warmup], id: \.self) { option in
                         Chip(title: option.label, isSelected: type == option) {
-                            withAnimation(.pgymSpring(reduceMotion: reduceMotion)) { type = option }
+                            withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { type = option }
                         }
                         .accessibilityIdentifier("d4.type.\(option.rawValue)")
                     }
@@ -76,7 +76,7 @@ struct SetDetailSheet: View {
                         SectionLabel(SessionCopy.effort)
                         Spacer()
                         Button(SessionCopy.clearEffort) {
-                            withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+                            withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
                                 rpe = nil
                                 showsEffort = false
                             }
@@ -98,7 +98,7 @@ struct SetDetailSheet: View {
                         .foregroundStyle(Color.steel)
                 } else {
                     Button {
-                        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) { showsEffort = true }
+                        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { showsEffort = true }
                     } label: {
                         Label(SessionCopy.addEffort, systemImage: "plus")
                             .font(.pgym(.bodyMedium, size: 15))

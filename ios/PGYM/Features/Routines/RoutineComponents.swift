@@ -144,6 +144,3 @@ extension View {
             .listRowInsets(EdgeInsets(top: top, leading: Spacing.screenMargin, bottom: bottom, trailing: Spacing.screenMargin))
     }
 }
-
-// `Animation.pgymSpring(reduceMotion:)` lives in Features/Auth/AuthComponents.swift (card I2); card I4
-// declared the same helper, and the merge in card I5 keeps one.

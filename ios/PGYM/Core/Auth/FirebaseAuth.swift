@@ -187,8 +187,18 @@ final class FirestoreUserRepository: UserRepository {
             displayName: data["displayName"] as? String,
             email: data["email"] as? String,
             birthYear: (data["birthYear"] as? NSNumber)?.intValue,
-            createdAt: (data["createdAt"] as? Timestamp)?.dateValue()
+            createdAt: (data["createdAt"] as? Timestamp)?.dateValue(),
+            goalPerWeek: (data["goalPerWeek"] as? NSNumber)?.intValue,
+            gymDays: (data["gymDays"] as? [String])?.compactMap(Weekday.init(rawValue:)),
+            reminderTime: (data["reminderTime"] as? String).flatMap(ReminderTime.init(string:)),
+            units: (data["units"] as? String).flatMap(NewUserProfile.Units.init(rawValue:)),
+            streakWeeks: (data["streakWeeks"] as? NSNumber)?.intValue,
+            proofCount: (data["proofCount"] as? NSNumber)?.intValue
         )
+    }
+
+    func saveOnboarding(_ settings: OnboardingSettings, uid: String) async throws {
+        try await document(uid).setData(settings.firestoreFields, merge: true)
     }
 
     func createProfileIfMissing(_ profile: NewUserProfile) async throws -> Bool {

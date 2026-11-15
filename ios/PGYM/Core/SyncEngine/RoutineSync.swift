@@ -6,14 +6,45 @@ import SwiftData
 ///
 /// Two fields beyond the architecture table, both additive (see card I4's PR):
 /// - `updatedAt`, so two phones can settle which edit is newer.
-/// - `name` on an exercise entry, only for custom exercises, so a routine that uses one still reads
-///   right on a phone that has not got the custom exercise yet.
+/// - `name`, `muscleGroup` and `equipment` on an exercise entry, only for custom exercises, so a
+///   routine that uses one still reads right on a phone that has not got the custom exercise yet
+///   (pull recreates it there).
 struct RoutineDocument: Equatable, Sendable {
     struct Entry: Equatable, Sendable {
         var exerciseId: String
         var targetSets: Int
         var targetReps: Int
         var name: String?
+        var muscleGroup: String?
+        var equipment: String?
+
+        init(
+            exerciseId: String,
+            targetSets: Int,
+            targetReps: Int,
+            name: String? = nil,
+            muscleGroup: String? = nil,
+            equipment: String? = nil
+        ) {
+            self.exerciseId = exerciseId
+            self.targetSets = targetSets
+            self.targetReps = targetReps
+            self.name = name
+            self.muscleGroup = muscleGroup
+            self.equipment = equipment
+        }
+
+        /// The custom exercise this entry describes, if it carries one.
+        var customExercise: Exercise? {
+            guard let name, exerciseId.hasPrefix(CustomExercise.idPrefix) else { return nil }
+            return Exercise(
+                id: exerciseId,
+                name: name,
+                muscleGroup: muscleGroup.flatMap(MuscleGroup.init(rawValue:)) ?? .core,
+                equipment: equipment.flatMap(Equipment.init(rawValue:)) ?? .other,
+                isCustom: true
+            )
+        }
     }
 
     var id: String
@@ -36,8 +67,15 @@ struct RoutineDocument: Equatable, Sendable {
             name: routine.name,
             order: routine.order,
             exercises: routine.exercises.map { item in
-                let custom = library.exercise(id: item.exerciseId).flatMap { $0.isCustom ? $0.name : nil }
-                return Entry(exerciseId: item.exerciseId, targetSets: item.targetSets, targetReps: item.targetReps, name: custom)
+                let custom = library.exercise(id: item.exerciseId).flatMap { $0.isCustom ? $0 : nil }
+                return Entry(
+                    exerciseId: item.exerciseId,
+                    targetSets: item.targetSets,
+                    targetReps: item.targetReps,
+                    name: custom?.name,
+                    muscleGroup: custom?.muscleGroup.rawValue,
+                    equipment: custom?.equipment.rawValue
+                )
             },
             updatedAt: routine.updatedAt
         )
@@ -56,6 +94,8 @@ struct RoutineDocument: Equatable, Sendable {
                     "targetReps": entry.targetReps,
                 ]
                 if let name = entry.name { map["name"] = name }
+                if let group = entry.muscleGroup { map["muscleGroup"] = group }
+                if let equipment = entry.equipment { map["equipment"] = equipment }
                 return map
             },
         ]
@@ -71,7 +111,14 @@ struct RoutineDocument: Equatable, Sendable {
             guard let exerciseId = map["exerciseId"] as? String else { return nil }
             let sets = (map["targetSets"] as? Int) ?? (map["targetSets"] as? NSNumber)?.intValue ?? RoutineItem.defaultSets
             let reps = (map["targetReps"] as? Int) ?? (map["targetReps"] as? NSNumber)?.intValue ?? RoutineItem.defaultReps
-            return Entry(exerciseId: exerciseId, targetSets: sets, targetReps: reps, name: map["name"] as? String)
+            return Entry(
+                exerciseId: exerciseId,
+                targetSets: sets,
+                targetReps: reps,
+                name: map["name"] as? String,
+                muscleGroup: map["muscleGroup"] as? String,
+                equipment: map["equipment"] as? String
+            )
         }
         self.init(id: id, name: name, order: order, exercises: entries, updatedAt: date(data["updatedAt"]) ?? .distantPast)
     }
@@ -149,6 +196,13 @@ final class RoutineSyncEngine {
         var byID: [String: Routine] = [:]
         for routine in locals { byID[routine.id] = routine }
 
+        // Custom exercises made on another phone arrive with the routines that use them.
+        var knownCustom = Set(try context.fetch(FetchDescriptor<CustomExercise>()).map(\.id))
+        for exercise in documents.flatMap(\.exercises).compactMap(\.customExercise)
+        where knownCustom.insert(exercise.id).inserted {
+            context.insert(CustomExercise(exercise: exercise))
+        }
+
         for document in documents {
             if let local = byID[document.id] {
                 // A local edit not yet pushed and at least as new as the remote copy wins.
@@ -203,11 +257,11 @@ final class RoutineSyncCoordinator {
 
     private var container: ModelContainer?
     private var engine: RoutineSyncEngine?
-    private var uidProvider: () -> String? = { nil }
+    private var uidProvider: @MainActor () -> String? = { nil }
     private var running = false
     private var again = false
 
-    func configure(container: ModelContainer, remote: RoutineRemote?, uid: @escaping () -> String?) {
+    func configure(container: ModelContainer, remote: RoutineRemote?, uid: @escaping @MainActor () -> String?) {
         self.container = container
         self.engine = remote.map(RoutineSyncEngine.init(remote:))
         self.uidProvider = uid

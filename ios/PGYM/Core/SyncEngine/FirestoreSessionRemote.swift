@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 #if canImport(FirebaseFirestore)
-import FirebaseAuth
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseFunctions
@@ -49,21 +48,22 @@ final class FirestoreSessionRemote: SessionRemote {
 }
 #endif
 
-/// Wires session sync to Firebase when Firebase is configured and a user is signed in; otherwise
-/// sessions stay queued on the phone and sync once both are true.
+/// Wires session sync to Firestore when the app runs on the Firebase backend; with the fake auth
+/// backend (fresh clone, CI, UI tests) sessions stay queued on the phone. Sync waits for a signed-in
+/// user. Same rule as `RoutineSyncSetup`.
 enum SessionSyncSetup {
     @MainActor
-    static func makeQueue(container: ModelContainer, isOnline: @escaping @MainActor () -> Bool) -> SessionSyncQueue {
+    static func makeQueue(
+        container: ModelContainer,
+        useFirestore: Bool,
+        uid: @escaping @MainActor () -> String?,
+        isOnline: @escaping @MainActor () -> Bool
+    ) -> SessionSyncQueue {
         #if canImport(FirebaseFirestore)
-        let firebaseOn = FirebaseApp.app() != nil
-        return SessionSyncQueue(
-            container: container,
-            engine: firebaseOn ? SessionSyncEngine(remote: FirestoreSessionRemote()) : nil,
-            uid: { FirebaseApp.app() != nil ? Auth.auth().currentUser?.uid : nil },
-            isOnline: isOnline
-        )
+        let engine = useFirestore && FirebaseApp.app() != nil ? SessionSyncEngine(remote: FirestoreSessionRemote()) : nil
         #else
-        return SessionSyncQueue(container: container, engine: nil, uid: { nil }, isOnline: isOnline)
+        let engine: SessionSyncEngine? = nil
         #endif
+        return SessionSyncQueue(container: container, engine: engine, uid: uid, isOnline: isOnline)
     }
 }

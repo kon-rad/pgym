@@ -2,9 +2,9 @@ import DesignSystem
 import SwiftData
 import SwiftUI
 
-/// F1 Profile. Name and member-since come from sign-in (card I2). The account block (email,
-/// verification, sign out, delete account) sits here until card I8 builds F5 Settings and
-/// F6 Privacy and data, where the flow spec puts those rows.
+/// F1 Profile. Name and member-since come from sign-in (card I2). Routines (F2) is linked here
+/// (card I4). The account block (email, verification, sign out, delete account) sits here until
+/// card I8 builds F5 Settings and F6 Privacy and data, where the flow spec puts those rows.
 struct ProfileScreen: View {
     static let viewID = "F1"
 
@@ -27,12 +27,7 @@ struct ProfileScreen: View {
                         StatTile(label: "Longest streak", value: "0", unit: "wk")
                     }
 
-                    NavigationLink(value: ProfileRoute.routines) {
-                        ProfileLinkRow(title: "Routines", detail: routines.isEmpty ? nil : "\(routines.count)")
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("profile.routines")
-                    .padding(.top, Spacing.grid(2))
+                    links
 
                     account
                 }
@@ -46,8 +41,8 @@ struct ProfileScreen: View {
             .accessibilityIdentifier("screen.\(Self.viewID)")
             .navigationDestination(for: ProfileRoute.self) { route in
                 switch route {
-                case .deleteAccount: DeleteAccountScreen()
                 case .routines: RoutinesScreen()
+                case .deleteAccount: DeleteAccountScreen()
                 }
             }
             .confirmationDialog(AuthCopy.Profile.signOutTitle, isPresented: $confirmingSignOut, titleVisibility: .visible) {
@@ -79,6 +74,19 @@ struct ProfileScreen: View {
     private var memberSince: String? {
         guard let created = session.profile?.createdAt else { return nil }
         return created.formatted(.dateTime.month(.wide).year())
+    }
+
+    /// The F1 rows from pgym-app-copy.md. Routines now; Goal and schedule, Settings, Privacy and data,
+    /// Agent access and About come with card I8.
+    private var links: some View {
+        VStack(spacing: Spacing.grid(2)) {
+            NavigationLink(value: ProfileRoute.routines) {
+                ProfileLinkRow(title: "Routines", detail: routines.isEmpty ? nil : "\(routines.count)")
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("profile.routines")
+        }
+        .padding(.top, Spacing.grid(2))
     }
 
     private var account: some View {
@@ -130,8 +138,8 @@ struct ProfileScreen: View {
 }
 
 enum ProfileRoute: Hashable {
-    case deleteAccount
     case routines
+    case deleteAccount
 }
 
 /// A link row on F1: title, an optional mono count, a chevron.

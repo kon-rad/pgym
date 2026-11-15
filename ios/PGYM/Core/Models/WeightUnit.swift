@@ -12,11 +12,17 @@ enum WeightUnit: String, Codable, CaseIterable, Sendable {
     /// Exact, by definition of the international pound.
     static let kilogramsPerPound = 0.45359237
 
-    /// UserDefaults key for the user's choice (B5 and F5 write it; card I3 and I8).
+    /// UserDefaults key for a choice made on this phone (F5 writes it; card I8).
     static let preferenceKey = "pgym.units"
 
-    /// The saved choice, or kg everywhere except US-measure locales.
-    static func preferred(defaults: UserDefaults = .standard, locale: Locale = .current) -> WeightUnit {
+    /// The units on the user's profile (B5 writes them, card I3), else the choice saved on this
+    /// phone, else kg everywhere except US-measure locales.
+    static func preferred(
+        profile: NewUserProfile.Units? = nil,
+        defaults: UserDefaults = .standard,
+        locale: Locale = .current
+    ) -> WeightUnit {
+        if let profile, let unit = WeightUnit(rawValue: profile.rawValue) { return unit }
         if let raw = defaults.string(forKey: preferenceKey), let unit = WeightUnit(rawValue: raw) {
             return unit
         }

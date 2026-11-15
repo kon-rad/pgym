@@ -39,7 +39,7 @@ struct AddExerciseSheet: View {
             if let creating {
                 NewExerciseForm(
                     draft: Binding(get: { creating }, set: { self.creating = $0 }),
-                    onCancel: { withAnimation(.pgymSpring(reduceMotion: reduceMotion)) { self.creating = nil } },
+                    onCancel: { withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { self.creating = nil } },
                     onAdd: addCustom
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -161,7 +161,7 @@ struct AddExerciseSheet: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
-        .animation(.pgymSpring(reduceMotion: reduceMotion), value: group)
+        .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: group)
     }
 
     private func sectionHeader(_ text: String) -> some View {
@@ -222,7 +222,7 @@ struct AddExerciseSheet: View {
     // MARK: Actions
 
     private func select(_ g: MuscleGroup?) {
-        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) { group = g }
+        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) { group = g }
     }
 
     private func pick(_ exercise: Exercise) {
@@ -234,7 +234,7 @@ struct AddExerciseSheet: View {
 
     private func startCreating() {
         searchFocused = false
-        withAnimation(.pgymSpring(reduceMotion: reduceMotion)) {
+        withAnimation(Animation.pgymSpring(reduceMotion: reduceMotion)) {
             creating = NewExerciseDraft(name: trimmedQuery, muscleGroup: group ?? .chest, equipment: .barbell)
         }
     }

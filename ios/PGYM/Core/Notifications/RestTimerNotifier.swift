@@ -11,7 +11,9 @@ protocol RestNotificationScheduling: AnyObject {
 }
 
 final class RestTimerNotifier: RestNotificationScheduling {
-    static let identifier = "pgym.rest.end"
+    /// Not under `Notifications.idPrefix` ("pgym."): the reminder scheduler (card I3) removes and
+    /// counts every pending identifier with that prefix as one of its own.
+    static let identifier = "pgym-rest.end"
 
     private let center: UNUserNotificationCenter
 
@@ -29,7 +31,7 @@ final class RestTimerNotifier: RestNotificationScheduling {
         // The sound plays only when the ringer is on; iOS decides that, not the app.
         content.sound = .default
         content.interruptionLevel = .active
-        content.threadIdentifier = "pgym.rest"
+        content.threadIdentifier = "pgym-rest"
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
         let request = UNNotificationRequest(identifier: Self.identifier, content: content, trigger: trigger)
         // Without notification permission (B3 skipped) this fails quietly: the in-app bar and haptic

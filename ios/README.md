@@ -22,15 +22,25 @@ The first run resolves the Swift packages from GitHub (Firebase is large; allow 
 |---|---|
 | `PGYM.xcodeproj` | The project. One scheme, `PGYM`, which builds the app and runs both test targets |
 | `PGYM/App` | Entry point, the three-tab shell, Firebase start-up |
-| `PGYM/Features` | One folder per feature: Auth, Onboarding, Today, Session, Proof, Progress, Profile |
-| `PGYM/Core` | Models (SwiftData), SyncEngine, API, Notifications |
-| `PGYM/Resources` | Asset catalog; later the exercise catalogue JSON |
+| `PGYM/Features` | One folder per feature: Auth, Onboarding, Today, Session, Proof, Progress, Profile, Routines (F2, F3, D3 and the B4 starter picker) |
+| `PGYM/Core` | Models (SwiftData: routines, custom exercises, the catalogue, starters, sessions with their exercises and sets, per-exercise bests), SyncEngine (routines and sessions to Firestore), API, Notifications (reminders, the rest timer) |
+| `PGYM/Resources` | Asset catalog and `exercise-catalogue.json` |
 | `Packages/DesignSystem` | Local Swift package: colour, type, spacing and radius tokens, the bundled fonts, and the shared components |
-| `PGYMTests` | Unit tests (app shell, Firebase start-up, every design token) |
-| `PGYMUITests` | UI test that launches the app to the tab shell |
+| `PGYMTests` | Unit tests (app shell, Firebase start-up, design tokens, sign-in, catalogue and search, routines, routine sync, onboarding, reminders, sessions and the session sync queue) |
+| `PGYMUITests` | UI tests: launch to the tab shell, sign-in, and Profile to Routines to editor to Add exercise |
 | `Config` | Committed placeholders for files that must never be committed |
 
 Files go into a target by being in its folder: the groups are synchronised with the file system, so there is no file list in the project to edit.
+
+## Exercise catalogue
+
+`PGYM/Resources/exercise-catalogue.json` ships in the app: `{version, exercises: [{id, name, muscleGroup, equipment}]}`. Names only, no descriptions. IDs are stable kebab-case slugs: sessions and routines store them, so never rename an ID; change the `name` instead. Muscle groups: `chest`, `back`, `shoulders`, `arms`, `legs`, `core`. Equipment: `barbell`, `dumbbell`, `kettlebell`, `machine`, `cable`, `bodyweight`, `band`, `ezBar`, `smithMachine`, `trapBar`, `other`. The unit tests fail on a duplicate ID or an unknown group.
+
+Custom exercises (made in D3) live on the phone with IDs starting `custom-`. A routine that uses one carries its name, muscle group and equipment in Firestore, and a pull recreates the custom exercise on another phone under the same ID.
+
+## Routine sync
+
+Routines are saved on the phone first (`needsSync`) and pushed to `users/{uid}/routines/{routineId}` by `RoutineSyncEngine` when Firebase is configured and a user is signed in; the app asks for a sync on launch, on returning to the foreground and after every edit. Deletes are kept as tombstones until Firestore has them. On a conflict the newer `updatedAt` wins. Tests use `FakeRoutineRemote`; nothing in the tests talks to Firebase. Sync runs only on the Firebase backend; with the fake auth backend (fresh clone, CI, UI tests) routines stay on the phone.
 
 ## Design system
 
@@ -80,6 +90,29 @@ To use the real providers:
 
 The minimum age (`AgePolicy.minimumAge`, 13) and the password length (`PasswordPolicy.minimumLength`, 8) are placeholders for open decisions.
 
+## Onboarding and reminders (card I3)
+
+Views B1 Weekly goal, B2 Gym days and time, B3 Reminders, B4 First routine, and B5 Units (the one-tap chip on B1, as `pgym-flow-spec.md` merges it). `AppSession` routes a signed-in user whose `users/{uid}` has no `goalPerWeek` to onboarding, so quitting mid-way resumes there; the answers so far are kept on the phone per step.
+
+| Piece | Where |
+|---|---|
+| Weekdays, ISO week keys, the plan, "a goal change starts next Monday" (`PlanSchedule`) | `PGYM/Core/Models/TrainingPlan.swift` |
+| B4's three starters, shared with the routines module (card I4; sets and reps await trainer review) | `PGYM/Core/Models/StarterRoutines.swift` |
+| `ReminderPlanner`: pure function from plan, sessions and ignored count to the notifications that should be pending; all reminder copy | `PGYM/Core/Notifications/Notifications.swift` |
+| `ReminderScheduler`: hands the plan to iOS, cancels a day once a session is logged, counts ignored reminders, backs off after 5 | `PGYM/Core/Notifications/ReminderScheduler.swift` |
+| Screens and their view model | `PGYM/Features/Onboarding/` |
+
+What onboarding writes to `users/{uid}` (a merge): `goalPerWeek`, `gymDays` (`["mon", "wed", "fri"]`), `reminderTime` (`"18:00"`), `units`, `timezone`. The chosen starter is copied into the phone's routines with `RoutineStore.adopt` after that write succeeds, and reaches `users/{uid}/routines/{routineId}` through the routine sync (see "Routine sync"); the onboarding draft keeps only the starter's `id`.
+
+Reminder rules, all local:
+
+- One reminder per gym day at the chosen time; none on rest days, none once a session (or a draft) is logged that day, none once the week's goal is reached.
+- Sunday 18:00 nudge only when the week is exactly one session short, and not if Sunday is a gym day with its own reminder.
+- After 5 reminders in a row go unopened, daily reminders and the nudge pause and a "New week" line goes out on Mondays at the reminder time. Opening any PGYM notification or logging a session brings the daily ones back. The back-off is planned six weeks ahead, so it also works while the app stays closed.
+- Goal and gym-day changes apply from next Monday; a new time applies at once.
+
+`TodayScreen` calls `services.reminders.sessionLogged(at:countsTowardWeek: false)` when a draft starts (card I5). For card I7: call `sessionLogged(at: startedAt)` when the session is stamped. Card I8's F4 calls `changePlan(_:)` and writes the same fields with `UserRepository.saveOnboarding`.
+
 ## Active session (card I5)
 
 Views D1 Pick routine, D2 Active session, D4 Set detail and D5 Leave session. D3 Add exercise comes from card I4.
@@ -100,3 +133,6 @@ How it stays offline-first:
 - The full-screen session is shown whenever an open draft exists (`SessionHost`), so after a kill the app opens straight back into D2.
 - A session is queued while `localVersion > syncedVersion`. The queue writes the whole client part of the document under the session's own ID (`setData` with merge), marks the version it wrote, retries with back-off after a failure, and waits while offline. A stamped session and the server-only fields are never written.
 - Weights are stored in kilograms. A value typed in pounds is stored as its exact kilogram equivalent and a stored value is never rewritten from its rounded display, so 100 lb stays 100 lb.
+- The display unit is the `units` on the user's profile (B5, card I3), then a choice saved on the phone, then the region's default (`WeightUnit.preferred`).
+- Like routine sync, the queue talks to Firestore only on the Firebase backend, for the signed-in user from `AppSession`; with the fake auth backend sessions stay queued on the phone.
+- The rest notification's identifier is kept outside the reminders' `pgym.` prefix, so a reminder reschedule never removes it.

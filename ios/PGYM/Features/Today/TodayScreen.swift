@@ -10,6 +10,8 @@ struct TodayScreen: View {
 
     @Environment(\.modelContext) private var context
     @Environment(SessionSyncQueue.self) private var sync
+    /// For the reminders (card I3). Optional so previews run without it.
+    @Environment(AppServices.self) private var services: AppServices?
     @Query(RoutineStore.activeDescriptor) private var routines: [Routine]
     @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
     @State private var picking = false
@@ -115,6 +117,8 @@ struct TodayScreen: View {
     private func start(_ routine: Routine?) {
         startTick += 1
         SessionFeature.start(routine, context: context, sync: sync)
+        // A draft today counts as already trained for the reminder; it does not move the week count.
+        Task { await services?.reminders.sessionLogged(at: .now, countsTowardWeek: false) }
     }
 }
 
