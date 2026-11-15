@@ -278,11 +278,11 @@ private struct NewExerciseForm: View {
 
                 SectionLabel("Muscle group")
                     .padding(.top, Spacing.grid(2))
-                FlowChips(items: MuscleGroup.allCases, label: \.label, selection: $draft.muscleGroup)
+                SelectionChips(items: MuscleGroup.allCases, label: \.label, selection: $draft.muscleGroup)
 
                 SectionLabel("Equipment")
                     .padding(.top, Spacing.grid(2))
-                FlowChips(items: Equipment.allCases, label: \.label, selection: $draft.equipment)
+                SelectionChips(items: Equipment.allCases, label: \.label, selection: $draft.equipment)
 
                 Button("Cancel", action: onCancel)
                     .font(.pgym(.bodyMedium, size: 17))
@@ -303,7 +303,7 @@ private struct NewExerciseForm: View {
 }
 
 /// Chips that wrap onto as many lines as they need (Dynamic Type safe).
-private struct FlowChips<Item: Hashable & Identifiable>: View {
+private struct SelectionChips<Item: Hashable & Identifiable>: View {
     let items: [Item]
     let label: KeyPath<Item, String>
     @Binding var selection: Item
