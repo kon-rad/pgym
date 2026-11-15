@@ -443,6 +443,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PGYM;
+				INFOPLIST_KEY_NSCameraUsageDescription = "PGYM uses the camera to take the photo on your proof card.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "PGYM saves your proof card to Photos when you ask it to.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -483,6 +485,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PGYM;
+				INFOPLIST_KEY_NSCameraUsageDescription = "PGYM uses the camera to take the photo on your proof card.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "PGYM saves your proof card to Photos when you ask it to.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

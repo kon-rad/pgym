@@ -50,14 +50,14 @@ public enum Rotation {
     public static let logoMark: Double = 8
 }
 
-/// The proof card from pgym-design-style.md, "The proof card". Rendering is card I6.
+/// The proof card from pgym-proof-card-spec.md (card D4). Rendered by `ProofCardRenderer` in the app.
 public enum ProofCardSpec {
     /// 4:5 feed size, in pixels.
     public static let feedSize = CGSize(width: 1080, height: 1350)
     /// 9:16 story size, in pixels. Same layout with more space above.
     public static let storySize = CGSize(width: 1080, height: 1920)
-    /// Flat Ink scrim opacity.
-    public static let scrimOpacity: Double = 0.7
+    /// Flat Ink scrim opacity (D4 settles 75%).
+    public static let scrimOpacity: Double = 0.75
     /// Share of the card height, from the bottom, covered by the scrim.
     public static let scrimCoverage: Double = 0.55
     /// The session name never runs past this many lines.

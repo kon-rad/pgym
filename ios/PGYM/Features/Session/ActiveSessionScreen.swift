@@ -11,7 +11,7 @@ struct ActiveSessionScreen: View {
     static let viewID = "D2"
 
     let session: WorkoutSession
-    /// Called after Finish and take proof has ended the session. The proof camera (D6, D7) is card I6.
+    /// Called after the proof card is saved and the session has ended (card I7 queues the upload).
     var onFinishForProof: (WorkoutSession) -> Void = { _ in }
 
     @Environment(\.modelContext) private var context
@@ -33,6 +33,8 @@ struct ActiveSessionScreen: View {
     @State private var logTick = 0
     @State private var bestTick = 0
     @State private var restDoneTick = 0
+    /// The proof flow (D6, D7, D8) over D2. The session stays open until the card is saved.
+    @State private var takingProof = false
 
     private let notifier: RestNotificationScheduling = RestTimerNotifier()
 
@@ -122,6 +124,18 @@ struct ActiveSessionScreen: View {
             Button(SessionCopy.discard, role: .destructive) { discard() }
         } message: {
             Text(SessionCopy.discardBody)
+        }
+        .fullScreenCover(isPresented: $takingProof) {
+            ProofFlowView(
+                session: session,
+                unit: unit,
+                onClose: { takingProof = false },
+                onSaveWithoutProof: {
+                    takingProof = false
+                    saveWithoutProof()
+                },
+                onFinished: { stampedAt in finishWithProof(at: stampedAt) }
+            )
         }
         .task { await onAppear() }
         .task(id: session.restEndsAt) { await waitForRestEnd() }
@@ -580,14 +594,22 @@ struct ActiveSessionScreen: View {
 
     private func discard() {
         notifier.cancelRestEnd()
+        ProofStore.standard.remove(session.id)
         act { try store.discard(session) }
     }
 
+    /// Opens the proof camera. The session is not ended here: Close on the camera comes back to D2
+    /// with everything intact, and the session ends when the card is saved.
     private func finishForProof() {
         commitKeypad()
         guard session.doneSetCount > 0 else { return }
+        takingProof = true
+    }
+
+    private func finishWithProof(at stampedAt: Date) {
         notifier.cancelRestEnd()
-        act { try store.finish(session, withProof: true) }
+        takingProof = false
+        act { try store.finish(session, withProof: true, now: stampedAt) }
         onFinishForProof(session)
     }
 
@@ -596,6 +618,12 @@ struct ActiveSessionScreen: View {
     private func onAppear() async {
         try? store.clearExpiredRest(session)
         scheduleRestNotification(session.restEndsAt)
+        let proofs = ProofStore.standard
+        if proofs.hasPhoto(session.id) || proofs.hasCard(session.id) {
+            // Killed after the shutter: back to D8 with that photo, or to the saved card.
+            takingProof = true
+            return
+        }
         if session.startedAt < AppLaunch.date.addingTimeInterval(-1) {
             // Opened straight back into the draft after a kill or a relaunch.
             show(SessionCopy.resumed(at: session.startedAt.formatted(date: .omitted, time: .shortened)))
