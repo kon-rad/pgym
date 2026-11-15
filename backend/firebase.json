@@ -8,7 +8,7 @@
       "source": ".",
       "codebase": "default",
       "runtime": "nodejs20",
-      "ignore": ["node_modules", ".git", "test", "src", "*.log", ".env*", "!.env.example"],
+      "ignore": ["node_modules", ".git", "test", "src", "*.log", ".secret.local"],
       "predeploy": ["npm run build"]
     }
   ],
