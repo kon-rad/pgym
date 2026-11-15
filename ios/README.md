@@ -169,3 +169,40 @@ TEST_RUNNER_PGYM_SAMPLE_DIR="$PWD/../docs/proof-card-samples" \
 ```
 
 The test photo `PGYMTests/Fixtures/proof-test-photo.png` is synthetic (`python3 Tools/make-proof-test-photo.py`).
+
+## Stamping, consent and Session complete (card I7)
+
+Views D9 Stamping (the stamp's pending state on D11, as `pgym-flow-spec.md` merges it), D10 Physique consent and D11 Session complete. Stamp it on D8 ends the session and shows D11 at once in the same cover as D2; nothing waits on the network.
+
+| Piece | Where |
+|---|---|
+| Typed `createUploadUrls`, `getPhotoUrls`, `stampSession` (shapes from `backend/src/handlers.ts`), error mapping | `PGYM/Core/API/API.swift` |
+| Firebase callables; App Check provider (App Attest on a device, debug provider on the simulator and the emulator) | `PGYM/Core/API/FirebaseProofAPI.swift`, set up in `PGYM/App/FirebaseBootstrap.swift` |
+| In-memory server and bucket for tests and builds without Firebase | `PGYM/Core/API/FakeProofAPI.swift` |
+| PUT from the file to the presigned URL, with progress | `PGYM/Core/SyncEngine/ProofUploader.swift` |
+| Upload, retry, URL renewal, stamp, the persisted queue | `PGYM/Core/SyncEngine/ProofStampQueue.swift` |
+| Score record, Firestore listener, consent flag | `PGYM/Core/Physique/` |
+| Image cache for signed photo links (memory, Caches, network; keyed by object key) | `PGYM/Core/API/SignedImageCache.swift` |
+| D11 rules as a pure model (score gating, headline, stats, bests, share) | `PGYM/Features/Proof/SessionCompleteModel.swift` |
+| Screens | `SessionCompleteScreen.swift` (D11 with D9), `PhysiqueConsentScreen.swift` (D10) |
+| Wiring | `PGYM/App/ProofServices.swift` |
+
+How a proof gets its number:
+
+1. Stamp it saves `card.jpg` (PENDING, phone time) and ends the session (`status` stays `draft`, `endedAt` set). The queue is every session in that state, so it survives a kill.
+2. The session sync writes the document; the stamp queue waits for that, because `createUploadUrls` needs it.
+3. `createUploadUrls` with the exact byte counts, then a PUT of `photo.jpg` and `card.jpg`. Each file is tried 3 times; a 403 (expired URL) renews the URLs once.
+4. `stampSession` only after both files are up. The server is idempotent per session: a retry after a kill gets the same number (`createUploadUrls` says "already stamped", the queue asks for the stamp again).
+5. The answer is saved on the session (`proofNumber`, `stampedAt`, keys, the whole receipt), `status` becomes `stamped` (the sync never writes it again), the card is re-rendered with the server's number and time, and the reminders hear `sessionLogged(at: startedAt)`.
+
+Offline the queue waits without counting a failure and runs again when the network comes back, when the session sync has written, and when the app comes to the front. Other failures back off (2, 5, 15, 30, 60 s) and then show D9's "The upload stopped" with Try again.
+
+The physique score:
+
+- Off by default. D10 is offered once as a row on D11, to users 18 or over (same year rule as the server's `isAdult`), never on the first proof.
+- Turn on is saved on the phone at once and written to `users/{uid}.physiqueConsent` and `physiqueConsentAt`; a change made offline is sent before the next stamp, so `stampSession` queues the score.
+- D11 shows the score block only when consent is on, the user is 18 or over, and the session was stamped with the score on. The score and tip arrive through a Firestore listener on the session. A refused or failed analysis shows nothing on D11 and no error.
+
+Without Firebase (fresh clone, UI tests) a fake server in memory stamps sessions so every screen can be clicked through; no score ever arrives there.
+
+To run against the emulator and MinIO: start the backend as in `backend/README.md`, set `PGYM_EMULATOR_HOST`, and put a `GoogleService-Info.plist` for `pgym-local` in `PGYM/Resources/`. The simulator uses the App Check debug provider; the emulator does not enforce App Check.
