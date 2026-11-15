@@ -1,14 +1,17 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { CallToAction } from '@/components/CallToAction'
+import { EditorScreen, Phone, ProgressScreen, ProofWallScreen } from '@/components/AppScreens'
+import { CallToAction, HERO_EMAIL_ID } from '@/components/CallToAction'
 import { LoopDemo } from '@/components/LoopDemo'
-import { CardPhoto, ProofCard, type ProofCardProps, type Scene } from '@/components/ProofCard'
+import { ProofCard, type ProofCardProps } from '@/components/ProofCard'
+import { StreakWeek } from '@/components/StreakWeek'
 import { site } from '@/lib/site'
 
-// Home. Sections in the order of pgym-landing-pages.md, "Home page sections".
-// Copy follows the voice in pgym-design-style.md: short, flat, a little dry, no
-// exclamation marks, no guilt. Every number on an example card is labelled as an
-// example; there are no user counts, ratings or testimonials.
+// Home. Sections and layout: pgym-landing-design.md section 2, in the order of
+// pgym-landing-pages.md. Copy: pgym-landing-copy.md, word for word; display lines
+// are written in sentence case there and set in upper case by the CSS. Every
+// number on a card or a screen is an example on the demo account; there are no
+// user counts, ratings or testimonials, and the physique score is never shown.
 
 const HERO_CARD: ProofCardProps = {
   // The sample session from the proof-card template (pgym-card-4x5.svg).
@@ -23,127 +26,103 @@ const HERO_CARD: ProofCardProps = {
   scene: 0,
 }
 
-const BACK_CARD: ProofCardProps = {
-  proof: 41,
-  streakWeeks: 6,
-  time: 'FRI 13 NOV 2026 · 12:05',
-  name: 'Legs',
-  sets: 15,
-  total: '6,105',
-  duration: '0:55',
-  filter: 'plate',
-  scene: 1,
-}
+const DEMO_CARD: ProofCardProps = { ...HERO_CARD, proof: 43, time: 'TUE 17 NOV 2026 · 07:02' }
 
-const DEMO_CARD: ProofCardProps = { ...HERO_CARD, proof: 43 }
-
-// Eight cards, two in each filter, so the series effect shows (section 4).
-const EXAMPLE_CARDS: (ProofCardProps & { caption: string })[] = [
-  { proof: 39, streakWeeks: 6, time: 'MON 09 NOV 2026 · 07:12', name: 'Pull A', sets: 16, total: '3,940', duration: '0:48', filter: 'iron', scene: 1, caption: 'Iron' },
-  { proof: 40, streakWeeks: 6, time: 'WED 11 NOV 2026 · 18:30', name: 'Legs', sets: 15, total: '6,105', duration: '0:55', filter: 'chalk', scene: 0, caption: 'Chalk' },
-  { proof: 41, streakWeeks: 6, time: 'FRI 13 NOV 2026 · 12:05', name: 'Upper', sets: 20, total: '4,410', duration: '1:01', filter: 'plate', scene: 2, caption: 'Plate' },
-  { proof: 42, streakWeeks: 7, time: 'SUN 15 NOV 2026 · 18:47', name: 'Push A', sets: 18, total: '6,240', duration: '1:12', filter: 'raw', scene: 3, caption: 'Raw' },
-  { proof: 43, streakWeeks: 7, time: 'TUE 17 NOV 2026 · 06:58', name: 'Pull B', sets: 17, total: '4,060', duration: '0:50', filter: 'iron', scene: 2, caption: 'Iron' },
-  { proof: 44, streakWeeks: 7, time: 'THU 19 NOV 2026 · 19:20', name: 'Legs', sets: 14, total: '6,350', duration: '0:57', filter: 'plate', scene: 1, caption: 'Plate' },
-  { proof: 45, streakWeeks: 7, time: 'SAT 21 NOV 2026 · 10:14', name: 'Full body', sets: 19, total: '5,215', duration: '1:04', filter: 'chalk', scene: 3, caption: 'Chalk' },
-  { proof: 46, streakWeeks: 8, time: 'MON 23 NOV 2026 · 07:05', name: 'Push B', sets: 16, total: '4,480', duration: '0:46', filter: 'raw', scene: 0, caption: 'Raw' },
+// Eight cards, two in each filter, in the order Iron, Chalk, Plate, Raw twice,
+// so each column of the 4 x 2 grid is one filter (pgym-landing-design.md 2.4).
+const FILTER_NAME = { iron: 'Iron', chalk: 'Chalk', plate: 'Plate', raw: 'Raw' } as const
+const EXAMPLE_CARDS: ProofCardProps[] = [
+  { proof: 1, streakWeeks: 0, time: 'MON 28 SEP 2026 · 07:10', name: 'Full body', sets: 12, total: '2,880', duration: '0:44', filter: 'iron', scene: 1 },
+  { proof: 9, streakWeeks: 2, time: 'WED 07 OCT 2026 · 18:22', name: 'Legs', sets: 15, total: '5,410', duration: '0:52', filter: 'chalk', scene: 0 },
+  { proof: 17, streakWeeks: 4, time: 'FRI 23 OCT 2026 · 12:05', name: 'Upper', sets: 20, total: '4,410', duration: '1:01', filter: 'plate', scene: 2 },
+  { proof: 25, streakWeeks: 5, time: 'SAT 31 OCT 2026 · 10:14', name: 'Pull A', sets: 16, total: '3,940', duration: '0:48', filter: 'raw', scene: 3 },
+  { proof: 33, streakWeeks: 6, time: 'MON 09 NOV 2026 · 07:12', name: 'Push B', sets: 16, total: '4,480', duration: '0:46', filter: 'iron', scene: 2 },
+  { proof: 38, streakWeeks: 6, time: 'WED 11 NOV 2026 · 18:30', name: 'Legs', sets: 15, total: '6,105', duration: '0:55', filter: 'chalk', scene: 1 },
+  { proof: 41, streakWeeks: 6, time: 'FRI 13 NOV 2026 · 19:20', name: 'Pull B', sets: 17, total: '4,060', duration: '0:50', filter: 'plate', scene: 3 },
+  { proof: 42, streakWeeks: 7, time: 'SUN 15 NOV 2026 · 18:47', name: 'Push A', sets: 18, total: '6,240', duration: '1:12', filter: 'raw', scene: 0 },
 ]
 
-const WEEKS = [
-  { label: 'Week 5', days: ['on', 'off', 'on', 'off', 'on', 'on', 'off'], status: '4 of 4', hit: true },
-  { label: 'Week 6', days: ['on', 'off', 'on', 'off', 'on', 'off', 'off'], status: 'Pass week', hit: true },
-  { label: 'Week 7', days: ['on', 'off', 'on', 'off', 'on', 'off', 'on'], status: '4 of 4', hit: true },
-  { label: 'Week 8', days: ['off', 'off', 'off', 'off', 'off', 'off', 'off'], status: '0 of 4. New week', hit: false },
-]
-
-// Sessions per week over 12 weeks against a goal of 4 (example data).
-const CHART = [2, 3, 4, 4, 3, 4, 5, 4, 4, 3, 4, 4]
-const GOAL = 4
-
+// pgym-landing-copy.md, "The eight questions". The "Is it free?" answer says the
+// price is not decided, which is the truth on 2026-11-15.
 const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: 'Is it free?',
-    a: <p>The price is not set yet. The launch email says what it is before you download anything.</p>,
+    a: 'PGYM is not out yet, and the price is not decided. It will be on this page before launch, and people on the waitlist hear first.',
   },
   {
-    q: 'Which phones?',
-    a: <p>iPhone, on iOS 17 or later. No Android, iPad or Watch app in the first version.</p>,
+    q: 'Which phones does it work on?',
+    a: 'iPhone only for now. There is no Android, iPad or Apple Watch version in the first release.',
   },
   {
     q: 'What happens to my photos?',
-    a: (
-      <p>
-        They are private. They go to one private storage bucket under your account, location data is removed on
-        the phone before upload, and nobody sees them unless you share a card. You can delete one photo, all of
-        them, or your whole account at any time.
-      </p>
-    ),
+    a: 'They are stored privately and only you can open them, plus any agent you give photo access. Nothing is shared until you share a card. You can delete one session, every photo, or your whole account from inside the app, and deleting your account removes all of it.',
   },
   {
     q: 'How is the physique score made?',
-    a: (
-      <p>
-        Only if you turn it on, and only if you are 18 or older. The session photo is sent to an AI vision model
-        that returns a score from 0 to 100 and one training tip. It is compared only with your own earlier scores,
-        never shown on the card, and turning it off deletes every stored score. It is an estimate from one photo,
-        not medical advice.
-      </p>
-    ),
+    a: "It is optional and off until you turn it on. When it is on, the session photo is sent to Google's Gemini model, which returns a 0 to 100 estimate of visible muscle development and symmetry, plus one training tip. Only you see it, it is compared only with your own earlier scores, and it never goes on the card. It is an AI estimate from one photo, not medical advice, and it is not available under 18. Turn it off any time and every stored score is deleted.",
   },
   {
-    q: 'Why can I not use a photo from my camera roll?',
-    a: (
-      <p>
-        Because then it would not be proof. The photo comes from the camera inside the app, and the time and proof
-        number come from the server when it arrives, not from the phone clock.
-      </p>
-    ),
+    q: 'What counts as a proof?',
+    a: 'One logged set and one photo from the PGYM camera. The time and the proof number come from our server when the photo arrives, not from your phone. Photos from your camera roll cannot be used. A retake replaces the photo; it is still one proof.',
   },
   {
     q: 'What if I miss a week?',
+    a: 'Nothing is lost by a rest day; the streak counts weeks, not days. Every 4 weeks you hit earns a pass week, used automatically on a week you fall short. A new week starts on Monday either way.',
+  },
+  {
+    q: 'Does it work without signal?',
+    a: 'Yes. Sets save on your phone as you log them, and the card is made on the phone. The proof is stamped with the server time when you are back online.',
+  },
+  {
+    q: 'Can I see the code?',
     a: (
-      <p>
-        You get a fresh week on Monday. Every four weeks you hit earns a pass week, which is used for you
-        automatically, so one bad week does not erase months.
-      </p>
+      <>
+        Yes. PGYM is open source on GitHub. If you use an AI agent, you can give it a read-only token to read your
+        sessions, streak and lifts. See the <Link href="/open-source">open source</Link> and{' '}
+        <Link href="/agents">agents</Link> pages.
+      </>
     ),
   },
 ]
+
+function Chevron() {
+  return (
+    <svg className="chevron" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 export default function Home() {
   return (
     <>
       {/* 2. Hero */}
       <section className="hero" aria-labelledby="hero-title">
-        <div className="wrap hero-grid">
+        <div className="wrap grid12">
           <div className="hero-copy" id="join">
-            <span className="label label-plate">An iPhone app</span>
-            <h1 id="hero-title" className="display display-xl">
-              Proof of gym<span className="dot">.</span>
+            <h1 id="hero-title" className="display display-h1">
+              Proof of <br />
+              gym<span className="dot">.</span>
             </h1>
-            <p className="lede">
-              Log your sets. Take one photo in the gym. Get a timestamped card with a proof number that only goes up.
+            <p className="lead">Log your sets. Take one photo. Get your proof.</p>
+            <p className="hero-body">
+              Every session ends in one card: your photo, the date and time, and a proof number set by our server. Rest
+              days never break the streak.
             </p>
-            <CallToAction source="hero" readQuery />
+            <div className="hero-action">
+              <CallToAction source="hero" readQuery inputId={HERO_EMAIL_ID} />
+            </div>
+            <p className="caption">{site.appLive ? 'iPhone only.' : 'iPhone only. Not out yet.'}</p>
           </div>
           <div className="hero-visual">
-            <div className="hero-stack">
-              <ProofCard {...BACK_CARD} className="hero-back" label="" />
-              <div className="phone hero-phone">
-                <div className="phone-screen">
-                  <div className="phone-bar">
-                    <span className="label">Session complete</span>
-                    <span className="label label-plate">Week 7</span>
-                  </div>
-                  <div className="phone-card">
-                    <ProofCard {...HERO_CARD} animateStamp />
-                  </div>
-                  <div className="phone-actions" aria-hidden="true">
-                    <span className="fake-btn">Share proof</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Phone
+              size="m"
+              desktop="l"
+              className="hero-phone"
+              label="The PGYM proof card editor: an example card in the Iron filter, stamped proof #042, 7 weeks running, Sunday 15 November 2026 at 18:47, Push A, 18 sets, 6,240 kg lifted, 1 hour 12 minutes."
+            >
+              <EditorScreen card={{ ...HERO_CARD, animateStamp: true }} />
+            </Phone>
           </div>
         </div>
       </section>
@@ -151,12 +130,9 @@ export default function Home() {
       {/* 3. The loop */}
       <section className="section" aria-labelledby="loop-title">
         <div className="wrap">
-          <div className="section-head" data-reveal>
-            <span className="label">How it works</span>
-            <h2 id="loop-title" className="display display-l">
-              Three steps. Under a minute after your last set.
-            </h2>
-          </div>
+          <h2 id="loop-title" className="display display-h2 section-title" data-reveal>
+            How it works
+          </h2>
           <LoopDemo card={DEMO_CARD} />
         </div>
       </section>
@@ -164,24 +140,27 @@ export default function Home() {
       {/* 4. The card */}
       <section className="section" aria-labelledby="card-title">
         <div className="wrap">
-          <div className="section-head" data-reveal>
+          <div className="section-head card-head" data-reveal>
             <span className="label">The card</span>
-            <h2 id="card-title" className="display display-l">
-              One layout. Every time.
+            <h2 id="card-title" className="display display-h2">
+              Every session, numbered.
             </h2>
-            <p>
-              Same stamp, same place, four filters. A profile full of them reads as a series: the 39th time, the
-              40th, the 41st. The number only goes up.
-            </p>
+            <div className="card-lead">
+              <p className="lead">
+                Proof #001 is your first session. Proof #042 is the 42nd time you showed up. One layout, four filters,
+                so your cards line up as a series.
+              </p>
+              <p className="label">Iron. Chalk. Plate. Raw.</p>
+            </div>
           </div>
-          <ul className="card-row" aria-label="Example proof cards" data-reveal>
-            {EXAMPLE_CARDS.map(({ caption, ...card }) => (
-              <li key={card.proof}>
-                <figure style={{ margin: 0 }}>
+        </div>
+        <div className="wrap wrap-bleed">
+          <ul className="card-row" aria-label="Eight example proof cards, two in each filter">
+            {EXAMPLE_CARDS.map((card, i) => (
+              <li key={card.proof} data-reveal style={{ ['--i' as string]: i % 4 }}>
+                <figure>
                   <ProofCard {...card} />
-                  <figcaption className="label">
-                    {caption} · Example
-                  </figcaption>
+                  <figcaption className="label">{FILTER_NAME[card.filter ?? 'iron']}</figcaption>
                 </figure>
               </li>
             ))}
@@ -191,77 +170,44 @@ export default function Home() {
 
       {/* 5. The streak */}
       <section className="section" aria-labelledby="streak-title">
-        <div className="wrap split">
-          <div className="section-head" data-reveal style={{ marginBottom: 0 }}>
-            <span className="label">The streak</span>
-            <h2 id="streak-title" className="display display-l">
-              Weeks, not days.
+        <div className="wrap grid12 streak">
+          <div className="streak-copy" data-reveal>
+            <h2 id="streak-title" className="display display-h2">
+              A streak that counts weeks.
             </h2>
-            <p>
-              You pick the number, from 2 to 6 sessions a week. Hit it and the streak moves. Rest days never break it,
-              and every four weeks you hit earns a pass week for the one that goes sideways.
-            </p>
+            <p>You pick the number, from 2 to 6 days a week. Hit it and the week locks. Rest days never break the streak.</p>
+            <p>Every 4 weeks you hit earns a pass week, used automatically, so one bad week does not erase months.</p>
           </div>
-          <div className="weeks" data-reveal role="img" aria-label="Example: a goal of four sessions a week. Weeks 5 to 7 hit, week 6 used a pass week, week 8 starts fresh at 0 of 4.">
-            {WEEKS.map((w) => (
-              <div className="week" key={w.label} aria-hidden="true">
-                <span className="label">{w.label}</span>
-                <span className="rings">
-                  {w.days.map((d, i) => (
-                    <span key={i} className={`ring${d === 'on' ? ' on' : ''}`} />
-                  ))}
-                </span>
-                <span className={`week-status${w.hit ? ' hit' : ''}`}>{w.status}</span>
-              </div>
-            ))}
-          </div>
+          <StreakWeek />
         </div>
       </section>
 
       {/* 6. Progress */}
       <section className="section" aria-labelledby="progress-title">
-        <div className="wrap">
-          <div className="section-head" data-reveal>
-            <span className="label">Progress</span>
-            <h2 id="progress-title" className="display display-l">
-              Every session, on one wall.
+        <div className="wrap grid12 progress">
+          <div className="progress-copy" data-reveal>
+            <h2 id="progress-title" className="display display-h2">
+              Watch it add up.
             </h2>
-            <p>The proof wall keeps every photo in order. The chart shows twelve weeks against your goal.</p>
+            <p className="lead">
+              The proof wall puts every card in one grid, newest first. The last 12 weeks sit against your goal. Every
+              lift keeps its best set and an estimated one-rep max.
+            </p>
           </div>
-          <div className="progress-grid">
-            <div className="panel" data-reveal>
-              <span className="label">Proof wall · Example</span>
-              <div className="wall" aria-hidden="true">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <div className="thumb" key={i}>
-                    <CardPhoto scene={(i % 4) as Scene} filter={(['iron', 'chalk', 'plate', 'iron'] as const)[i % 4]} />
-                    <span>#{String(33 + i).padStart(3, '0')}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="panel" data-reveal>
-              <span className="label">Sessions a week · 12 weeks · Example</span>
-              <div
-                className="chart"
-                data-reveal
-                role="img"
-                aria-label={`Example chart: sessions per week over 12 weeks, goal ${GOAL}. ${CHART.filter((n) => n >= GOAL).length} of 12 weeks hit.`}
-              >
-                {CHART.map((n, i) => (
-                  <span
-                    key={i}
-                    className={`bar${n >= GOAL ? ' hit' : ''}`}
-                    style={{ height: `${(n / 6) * 100}%`, transitionDelay: `${i * 25}ms` }}
-                  />
-                ))}
-              </div>
-              <div className="chart-axis" aria-hidden="true">
-                <span className="label">W1</span>
-                <span className="label">Goal {GOAL} a week</span>
-                <span className="label">W12</span>
-              </div>
-            </div>
+          <div className="progress-frames" data-reveal>
+            <Phone
+              size="m"
+              label="The Progress screen, example data: 42 proofs, a 7 week streak, sessions a week over 12 weeks against a goal of 4, the newest six cards, and best sets for bench press and back squat."
+            >
+              <ProgressScreen />
+            </Phone>
+            <Phone
+              size="m"
+              className="desktop-only"
+              label="The proof wall, example data: every card in a grid, newest first, grouped by month, from proof #042 back to #025."
+            >
+              <ProofWallScreen />
+            </Phone>
           </div>
         </div>
       </section>
@@ -269,49 +215,49 @@ export default function Home() {
       {/* 7. Private by default */}
       <section className="section" aria-labelledby="private-title">
         <div className="wrap">
-          <div className="section-head" data-reveal>
-            <span className="label">Private by default</span>
-            <h2 id="private-title" className="display display-l">
-              Your photos stay yours.
-            </h2>
-          </div>
+          <h2 id="private-title" className="display display-h2 section-title" data-reveal>
+            Private by default.
+          </h2>
           <ul className="facts">
             <li className="fact" data-reveal>
-              <h3>Private until you share</h3>
-              <p>Photos sit in private storage under your account. A card leaves the app only when you tap Share.</p>
-            </li>
-            <li className="fact" data-reveal>
-              <h3>The score is opt-in</h3>
+              <span className="label">Photos</span>
               <p>
-                Off by default, 18 and over only, and only you see it. It is never on the card. Turn it off and every
-                stored score is deleted.
+                Your photos are stored privately. Only you can open them, plus any agent you choose to give photo
+                access. Nothing leaves the app until you share a card.
               </p>
             </li>
             <li className="fact" data-reveal>
-              <h3>Delete anything</h3>
+              <span className="label">The score</span>
               <p>
-                One photo, all photos, or the whole account, from the app or from{' '}
-                <Link href="/delete-account">this site</Link>.
+                There is an optional AI physique score. It is off until you turn it on, only you see it, and it never
+                goes on the card.
+              </p>
+            </li>
+            <li className="fact" data-reveal>
+              <span className="label">Your data</span>
+              <p>
+                You can delete a session, every photo, or <Link href="/delete-account">your whole account</Link> from
+                inside the app.
               </p>
             </li>
           </ul>
+          <p className="facts-link">
+            <Link href="/privacy">Read the privacy policy</Link>
+          </p>
         </div>
       </section>
 
       {/* 8. Questions */}
       <section className="section" aria-labelledby="faq-title">
-        <div className="wrap">
-          <div className="section-head" data-reveal>
-            <span className="label">Questions</span>
-            <h2 id="faq-title" className="display display-l">
-              Asked before you ask.
-            </h2>
-          </div>
+        <div className="wrap grid12 questions">
+          <h2 id="faq-title" className="display display-h2" data-reveal>
+            Questions
+          </h2>
           <div className="faq" data-reveal>
             {FAQ.map((item) => (
               <details key={item.q}>
                 <summary>{item.q}</summary>
-                <div>{item.a}</div>
+                <p>{item.a}</p>
               </details>
             ))}
           </div>
@@ -319,59 +265,43 @@ export default function Home() {
       </section>
 
       {/* 9. Final call */}
-      <section className="section" aria-labelledby="final-title">
+      <section className="section final-section" aria-labelledby="final-title">
         <div className="wrap final" data-reveal>
-          <h2 id="final-title" className="display display-xl">
-            Show up. <br />
-            Get the proof<span style={{ color: 'var(--plate)' }}>.</span>
+          <h2 id="final-title" className="display display-h2">
+            Proof #001 is waiting<span className="dot">.</span>
           </h2>
-          <CallToAction source="final-call" />
+          <div className="final-action">
+            <CallToAction source="final-call" />
+          </div>
         </div>
       </section>
 
       {/* 10. Built in the open */}
-      <section className="section" aria-labelledby="open-title">
+      <section className="section open-section" aria-labelledby="open-title">
         <div className="wrap">
-          <div className="section-head" data-reveal>
-            <span className="label">Built in the open</span>
-            <h2 id="open-title" className="display display-l">
-              Read the code. Bring your agent.
-            </h2>
-          </div>
+          <h2 id="open-title" className="label open-label">
+            Built in the open.
+          </h2>
           <div className="open-grid">
-            <div className="open-card" data-reveal>
-              <h3>The code is on GitHub</h3>
-              <p>
-                The iPhone app, the server and this site, in one public repository. Read how the proof number is
-                made, or run the whole thing on your laptop.
-              </p>
-              <p className="open-links">
-                <a className="btn btn-secondary" href={site.githubUrl}>
-                  kon-rad/pgym on GitHub
-                </a>
-                <Link className="arrow-link" href="/open-source">
-                  Open source
-                </Link>
-              </p>
-            </div>
-            <div className="open-card" data-reveal>
-              <h3>Your agent can read your data</h3>
-              <p>
-                Make a token in the app and give it to your own AI agent. It can read your sessions, streak and lifts
-                to plan next week. Read only: it cannot make a proof. Photos need their own permission.
-              </p>
-              <div className="code" aria-label="Example request">
-                {`curl -H "Authorization: Bearer $PGYM_TOKEN" \\\n  ${site.apiUrl}/v1/stats`}
-              </div>
-              <p className="open-links">
-                <Link className="arrow-link" href="/agents">
-                  For your agent
-                </Link>
-                <a className="arrow-link" href="/skill.md">
-                  skill.md
-                </a>
-              </p>
-            </div>
+            <Link className="open-card" href="/open-source" data-reveal>
+              <span className="open-text">
+                <strong>The code is on GitHub.</strong>
+                <span>PGYM is open source. Read it, run it, or report a problem.</span>
+                <span className="label">See the code</span>
+              </span>
+              <Chevron />
+            </Link>
+            <Link className="open-card" href="/agents" data-reveal>
+              <span className="open-text">
+                <strong>Your agent can read your training.</strong>
+                <span>
+                  Give your AI agent a read-only token and it can see your sessions, streak and lifts. It can plan next
+                  week. It cannot make a proof.
+                </span>
+                <span className="label">For your agent</span>
+              </span>
+              <Chevron />
+            </Link>
           </div>
         </div>
       </section>
