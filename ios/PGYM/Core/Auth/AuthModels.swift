@@ -78,14 +78,53 @@ struct AppleSignInCredential: Equatable, Sendable {
     }
 }
 
-/// `users/{uid}` as read back from Firestore. Only the fields sign-in cares about; the rest of the
-/// document (goal, schedule, streak counters) belongs to onboarding and the functions.
+/// `users/{uid}` as read back from Firestore: the fields sign-in, onboarding and the reminders use.
 struct UserProfile: Equatable, Sendable {
     let uid: String
     var displayName: String?
     var email: String?
     var birthYear: Int?
     var createdAt: Date?
+    /// Set by onboarding (B1). Nil means onboarding is not finished.
+    var goalPerWeek: Int? = nil
+    /// B2, Monday first.
+    var gymDays: [Weekday]? = nil
+    /// B2.
+    var reminderTime: ReminderTime? = nil
+    /// B5 (the units chip on B1).
+    var units: NewUserProfile.Units? = nil
+    /// Server-owned, read for the reminder copy ("One session locks week {week}").
+    var streakWeeks: Int? = nil
+    var proofCount: Int? = nil
+
+    /// The plan stored on the document, if it is complete and consistent.
+    var plan: WeeklyPlan? {
+        guard let goalPerWeek, let gymDays else { return nil }
+        let plan = WeeklyPlan(goal: goalPerWeek, days: Set(gymDays), time: reminderTime ?? .default)
+        return plan.isValid ? plan : nil
+    }
+
+    /// Whether the user still has onboarding to do.
+    var needsOnboarding: Bool { goalPerWeek == nil }
+}
+
+/// What onboarding writes to `users/{uid}` (merged, so nothing else on the document changes).
+/// `goalPerWeek` is the goal from the next week the server opens; the server keeps the goal it
+/// locked for the current week (`streakState.weekGoal`), so a change never moves this week's target.
+struct OnboardingSettings: Equatable, Sendable {
+    var plan: WeeklyPlan
+    var units: NewUserProfile.Units
+    var timezone: String
+
+    var firestoreFields: [String: Any] {
+        [
+            "goalPerWeek": plan.goal,
+            "gymDays": plan.storedDays,
+            "reminderTime": plan.time.storageValue,
+            "units": units.rawValue,
+            "timezone": timezone,
+        ]
+    }
 }
 
 /// The fields the phone writes when it creates `users/{uid}` after A5.
@@ -101,7 +140,7 @@ struct NewUserProfile: Equatable, Sendable {
     /// Always false at creation. The score is opt-in (D10), never on by default.
     var physiqueConsent: Bool = false
 
-    enum Units: String, Sendable {
+    enum Units: String, Codable, CaseIterable, Sendable {
         case kg, lb
 
         /// kg everywhere except US-measure locales. B5 lets the user change it.

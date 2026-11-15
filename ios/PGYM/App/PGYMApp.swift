@@ -1,13 +1,16 @@
 import DesignSystem
 import SwiftData
 import SwiftUI
+import UserNotifications
 
 @main
 struct PGYMApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var session: AppSession
     @State private var network: NetworkMonitor
+    @State private var services: AppServices
     private let dependencies: AuthDependencies
+    private let notificationTaps = NotificationTapRouter()
     private let container: ModelContainer
 
     init() {
@@ -30,6 +33,17 @@ struct PGYMApp: App {
             useFirestore: backend == .firebase,
             uid: { [session] in session.user?.uid }
         )
+
+        // UI tests never touch iOS notifications or leave state behind.
+        let services = isUITest ? AppServices.inMemory() : AppServices.live()
+        _services = State(initialValue: services)
+        // Set before launch finishes, so a tap that cold-starts the app is delivered.
+        if !isUITest {
+            UNUserNotificationCenter.current().delegate = notificationTaps
+        }
+        notificationTaps.onOpen = { identifier in
+            Task { await services.reminders.notificationOpened(identifier) }
+        }
     }
 
     var body: some Scene {
@@ -37,6 +51,12 @@ struct PGYMApp: App {
             AppRootView()
                 .environment(session)
                 .environment(network)
+                .environment(services)
+                .task {
+                    for identifier in notificationTaps.drain() {
+                        await services.reminders.notificationOpened(identifier)
+                    }
+                }
                 .preferredColorScheme(.dark)
                 .onOpenURL { url in _ = dependencies.handleOpenURL(url) }
                 // Routines saved while signed out or offline go up as soon as both change.
