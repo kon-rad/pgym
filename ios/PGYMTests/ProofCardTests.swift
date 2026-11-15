@@ -108,9 +108,11 @@ final class ProofCardTests: XCTestCase {
     /// The story card is the feed card moved down 300 px: the overlays of the two match pixel for pixel
     /// once the photo is the same flat colour behind both.
     func testStoryLayoutIsTheFeedLayoutMovedDown300() throws {
-        let ctx = CGContext(data: nil, width: 8, height: 8, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        // Camera-sized, so the photo is scaled down as in the app. A tiny photo scaled up 200 times gets
+        // soft left and right edges whose width depends on the card size, which is not what this test is about.
+        let ctx = CGContext(data: nil, width: 1440, height: 2560, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
         ctx.setFillColor(CGColor(srgbRed: 0.5, green: 0.5, blue: 0.5, alpha: 1))
-        ctx.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
+        ctx.fill(CGRect(x: 0, y: 0, width: 1440, height: 2560))
         let flat = try XCTUnwrap(ctx.makeImage())
         let feed = pixels(try ProofCardRenderer.render(photo: flat, summary: summary(), options: ProofCardOptions(filter: .raw, size: .feed)))
         let story = pixels(try ProofCardRenderer.render(photo: flat, summary: summary(), options: ProofCardOptions(filter: .raw, size: .story)))

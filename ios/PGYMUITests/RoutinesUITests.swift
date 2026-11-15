@@ -30,7 +30,10 @@ final class RoutinesUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(app.descendants(matching: .any)["screen.F3"].waitForExistence(timeout: 5))
 
-        app.buttons["Add exercise"].firstMatch.tap()
+        // The button sits under the six exercise rows, below the fold on a phone.
+        let addExercise = app.buttons["Add exercise"].firstMatch
+        for _ in 0..<6 where !addExercise.isHittable { app.swipeUp() }
+        addExercise.tap()
         XCTAssertTrue(app.descendants(matching: .any)["screen.D3"].waitForExistence(timeout: 5))
         let search = app.textFields["Search exercises"]
         XCTAssertTrue(search.waitForExistence(timeout: 5))

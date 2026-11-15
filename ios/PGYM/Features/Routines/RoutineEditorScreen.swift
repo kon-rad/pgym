@@ -234,9 +234,8 @@ private struct RoutineItemRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(3)) {
             ExerciseLabel(exercise)
+            SectionLabel("Sets x reps")
             HStack(spacing: Spacing.grid(3)) {
-                SectionLabel("Sets x reps")
-                Spacer(minLength: 0)
                 CountStepper(label: "Sets", value: $item.targetSets, range: RoutineItem.setsRange)
                 Text("x")
                     .font(.pgym(.data, size: 15))

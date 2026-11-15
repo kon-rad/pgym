@@ -19,6 +19,9 @@ protocol NotificationCenterClient: AnyObject {
 @MainActor
 final class SystemNotificationCenter: NotificationCenterClient {
     private let center: UNUserNotificationCenter
+    /// Removing requests is a blocking call to a system service; it must never run on the main
+    /// thread. Removes and adds share this serial queue so a remove always lands before the add after it.
+    private let queue = DispatchQueue(label: "pgym.reminder-center", qos: .utility)
 
     init(center: UNUserNotificationCenter = .current()) {
         self.center = center
@@ -52,11 +55,18 @@ final class SystemNotificationCenter: NotificationCenterClient {
         parts.timeZone = calendar.timeZone
         let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
         let request = UNNotificationRequest(identifier: notification.id, content: content, trigger: trigger)
-        try? await center.add(request)
+        await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
+            queue.async { [center] in
+                center.add(request) { _ in done.resume() }
+            }
+        }
     }
 
     func removePending(_ identifiers: [String]) {
-        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        guard !identifiers.isEmpty else { return }
+        queue.async { [center] in
+            center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        }
     }
 }
 

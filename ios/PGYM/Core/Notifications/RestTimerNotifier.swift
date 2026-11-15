@@ -16,6 +16,10 @@ final class RestTimerNotifier: RestNotificationScheduling {
     static let identifier = "pgym-rest.end"
 
     private let center: UNUserNotificationCenter
+    /// The notification centre talks to a system service and can block for seconds when that
+    /// service is slow. Every call goes through this serial queue, never the main thread, so
+    /// starting a session or ticking a set cannot freeze the screen. Serial keeps cancel-then-add in order.
+    private let queue = DispatchQueue(label: "pgym.rest-notifier", qos: .utility)
 
     init(center: UNUserNotificationCenter = .current()) {
         self.center = center
@@ -23,6 +27,14 @@ final class RestTimerNotifier: RestNotificationScheduling {
 
     func scheduleRestEnd(at endsAt: Date, title: String, body: String) {
         cancelRestEnd()
+        guard endsAt.timeIntervalSinceNow >= 1 else { return }
+        queue.async { [center] in
+            self.add(center: center, endsAt: endsAt, title: title, body: body)
+        }
+    }
+
+    private func add(center: UNUserNotificationCenter, endsAt: Date, title: String, body: String) {
+        // Measured here, on the queue, so time spent waiting does not make the rest end late.
         let interval = endsAt.timeIntervalSinceNow
         guard interval >= 1 else { return }
         let content = UNMutableNotificationContent()
@@ -40,8 +52,10 @@ final class RestTimerNotifier: RestNotificationScheduling {
     }
 
     func cancelRestEnd() {
-        center.removePendingNotificationRequests(withIdentifiers: [Self.identifier])
-        center.removeDeliveredNotifications(withIdentifiers: [Self.identifier])
+        queue.async { [center] in
+            center.removePendingNotificationRequests(withIdentifiers: [Self.identifier])
+            center.removeDeliveredNotifications(withIdentifiers: [Self.identifier])
+        }
     }
 }
 

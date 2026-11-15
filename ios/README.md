@@ -11,7 +11,7 @@ The PGYM iPhone app. Swift, SwiftUI, iOS 17 and later, Swift Package Manager.
 
 ```sh
 cd ios
-xcodebuild -scheme PGYM -destination 'platform=iOS Simulator,name=iPhone 16' build test
+xcodebuild -scheme PGYM -destination 'platform=iOS Simulator,name=iPhone 17' build test
 ```
 
 The first run resolves the Swift packages from GitHub (Firebase is large; allow a few minutes).
