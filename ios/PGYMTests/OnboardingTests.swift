@@ -1,8 +1,10 @@
+import SwiftData
 import XCTest
 @testable import PGYM
 
 /// Onboarding B1 to B5 against the fakes: the goal must be chosen, the days must match it, the
-/// answers land on `users/{uid}`, the starter routines are written, and reminders are scheduled.
+/// answers land on `users/{uid}`, the starter is adopted into the routines store, and reminders
+/// are scheduled.
 /// Each test's world is built lazily inside the test (on the main actor), as in AuthFlowTests.
 @MainActor
 private final class World {
@@ -12,8 +14,14 @@ private final class World {
     let center: FakeNotificationCenter
     let session: AppSession
     let scheduler: ReminderScheduler
+    /// The phone's routines, in memory (card I4's store).
+    let container: ModelContainer
+    let routines: RoutineStore
 
     init() {
+        let container = Models.makeContainer(inMemory: true)
+        self.container = container
+        routines = RoutineStore(context: container.mainContext)
         let auth = FakeAuthService()
         let users = FakeUserRepository()
         let center = FakeNotificationCenter()
@@ -57,6 +65,7 @@ final class OnboardingTests: XCTestCase {
     private var center: FakeNotificationCenter { current.center }
     private var session: AppSession { current.session }
     private var scheduler: ReminderScheduler { current.scheduler }
+    private var routines: RoutineStore { current.routines }
 
     /// A brand-new user, through A5, standing on B1.
     private func newUserOnB1() async throws -> OnboardingModel {
@@ -142,7 +151,7 @@ final class OnboardingTests: XCTestCase {
 
     // MARK: B3 and B4, and saving
 
-    /// The whole path: everything lands on `users/{uid}`, the starter routines are written,
+    /// The whole path: everything lands on `users/{uid}`, the starter becomes routines on the phone,
     /// reminders are scheduled, and the user is on the tabs.
     func testFinishingSavesEverythingToTheUserDocument() async throws {
         let model = try await newUserOnB1()
@@ -160,7 +169,7 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(model.step, .routine)
 
         XCTAssertEqual(model.selectedStarter, .upperLower, "4 days fits Upper/Lower")
-        await model.finish(session: session, scheduler: scheduler)
+        await model.finish(session: session, scheduler: scheduler, routines: routines)
 
         let uid = try XCTUnwrap(session.user?.uid)
         let write = try XCTUnwrap(users.onboardingWrites.last)
@@ -174,7 +183,9 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(Set(fields.keys), ["goalPerWeek", "gymDays", "reminderTime", "units", "timezone"],
                        "no server-owned field is written")
 
-        XCTAssertEqual(users.routines[uid]?.keys.sorted(), ["starter-lower", "starter-upper"])
+        let adopted = try routines.activeRoutines()
+        XCTAssertEqual(adopted.map(\.name), ["Upper", "Lower"])
+        XCTAssertEqual(Set(adopted.map(\.starterID)), [StarterRoutine.upperLower.id])
         XCTAssertEqual(users.documents[uid]?.goalPerWeek, 4)
         XCTAssertEqual(session.route, .main)
         XCTAssertNil(drafts.load(uid: uid), "the draft is gone once saved")
@@ -198,11 +209,11 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(model.step, .routine)
         XCTAssertEqual(model.selectedStarter, .fullBody)
 
-        await model.finish(buildOwn: true, session: session, scheduler: scheduler)
+        await model.finish(buildOwn: true, session: session, scheduler: scheduler, routines: routines)
         XCTAssertEqual(center.authorizationRequests, 0)
         XCTAssertTrue(center.pending.isEmpty)
         XCTAssertEqual(session.route, .main)
-        XCTAssertNil(users.routines[session.user?.uid ?? ""], "Build my own writes no starter")
+        XCTAssertTrue(try routines.activeRoutines().isEmpty, "Build my own writes no starter")
     }
 
     func testDeclinedPromptShowsTheSettingsLine() async throws {
@@ -224,10 +235,11 @@ final class OnboardingTests: XCTestCase {
         model.skipReminders()
         users.nextError = URLError(.notConnectedToInternet)
 
-        await model.finish(session: session, scheduler: scheduler)
+        await model.finish(session: session, scheduler: scheduler, routines: routines)
         XCTAssertEqual(model.errorText, OnboardingCopy.couldNotSave)
         XCTAssertEqual(session.route, .onboarding)
         XCTAssertNil(scheduler.state.schedule)
+        XCTAssertTrue(try routines.activeRoutines().isEmpty, "a failed save adopts nothing, so a retry cannot double up")
     }
 
     // MARK: Resume
@@ -245,6 +257,24 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(resumed.step, .days)
         XCTAssertEqual(resumed.draft.goal, 5)
         XCTAssertEqual(resumed.draft.days, [.mon, .tue, .wed, .thu, .sat])
+    }
+
+    /// The picked starter is saved by ID and read back as the routines module's starter.
+    func testPickedStarterSurvivesAResume() async throws {
+        let model = try await newUserOnB1()
+        model.pickGoal(4)
+        XCTAssertEqual(model.selectedStarter, .upperLower)
+        model.pickStarter(.fullBody)
+        XCTAssertEqual(model.draft.starterID, StarterRoutine.fullBody.id)
+
+        let uid = try XCTUnwrap(session.user?.uid)
+        let data = try JSONEncoder().encode(try XCTUnwrap(drafts.load(uid: uid)))
+        let decoded = try JSONDecoder().decode(OnboardingDraft.self, from: data)
+        XCTAssertEqual(StarterRoutine.withID(decoded.starterID), .fullBody)
+        XCTAssertNil(StarterRoutine.withID("not-a-starter"))
+
+        let resumed = OnboardingModel(uid: uid, startingUnits: .kg, store: drafts)
+        XCTAssertEqual(resumed.selectedStarter, .fullBody)
     }
 
     // MARK: B5 units
@@ -267,16 +297,14 @@ final class OnboardingTests: XCTestCase {
     // MARK: Starters
 
     func testStartersFitTheGoal() {
-        XCTAssertEqual(StarterRoutine.suggested(for: 2), .fullBody)
-        XCTAssertEqual(StarterRoutine.suggested(for: 3), .fullBody)
-        XCTAssertEqual(StarterRoutine.suggested(for: 4), .upperLower)
-        XCTAssertEqual(StarterRoutine.suggested(for: 5), .pushPullLegs)
-        XCTAssertEqual(StarterRoutine.suggested(for: 6), .pushPullLegs)
-        for starter in StarterRoutine.allCases {
-            XCTAssertFalse(starter.routines.isEmpty)
-            XCTAssertEqual(Set(starter.routines.map(\.id)).count, starter.routines.count, "unique IDs")
-            let fields = starter.routines[0].firestoreFields
-            XCTAssertNotNil(fields["exercises"] as? [[String: Any]])
+        XCTAssertEqual(StarterRoutine.suggested(forGoal: 2), .fullBody)
+        XCTAssertEqual(StarterRoutine.suggested(forGoal: 3), .fullBody)
+        XCTAssertEqual(StarterRoutine.suggested(forGoal: 4), .upperLower)
+        XCTAssertEqual(StarterRoutine.suggested(forGoal: 5), .pushPullLegs)
+        XCTAssertEqual(StarterRoutine.suggested(forGoal: 6), .pushPullLegs)
+        for starter in StarterRoutine.all {
+            XCTAssertFalse(starter.workouts.isEmpty)
+            XCTAssertEqual(StarterRoutine.withID(starter.id), starter)
         }
     }
 

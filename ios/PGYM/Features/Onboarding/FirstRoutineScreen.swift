@@ -1,4 +1,5 @@
 import DesignSystem
+import SwiftData
 import SwiftUI
 
 /// B4 First routine: three starters, the one that fits the goal pre-selected and tagged, or
@@ -10,8 +11,11 @@ struct FirstRoutineScreen: View {
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
+    @Environment(\.modelContext) private var context
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var finished = 0
+    /// The bundled catalogue, for the exercise names on the starter cards.
+    private let library = ExerciseLibrary()
 
     var body: some View {
         OnboardingScreen(viewID: Self.viewID) {
@@ -22,9 +26,10 @@ struct FirstRoutineScreen: View {
             OnboardingTitle(text: OnboardingCopy.Routine.title)
 
             VStack(spacing: Spacing.cardGap) {
-                ForEach(StarterRoutine.allCases) { starter in
+                ForEach(StarterRoutine.all) { starter in
                     StarterCard(
                         starter: starter,
+                        exercises: starter.exerciseLine(using: library),
                         isSelected: model.selectedStarter == starter,
                         fitsTag: starter == model.suggestedStarter ? OnboardingCopy.Routine.fits(goal: model.goal) : nil
                     ) {
@@ -44,23 +49,37 @@ struct FirstRoutineScreen: View {
         } footer: {
             LoadingPrimaryButton(title: OnboardingCopy.Routine.button, isLoading: model.isSaving, identifier: "b4.use") {
                 Task {
-                    await model.finish(session: session, scheduler: services.reminders)
+                    await finish()
                     if model.errorText == nil { finished += 1 }
                 }
             }
             .sensoryFeedback(.success, trigger: finished)
             OnboardingLink(title: OnboardingCopy.Routine.buildOwn, identifier: "b4.buildOwn") {
-                Task { await model.finish(buildOwn: true, session: session, scheduler: services.reminders) }
+                Task { await finish(buildOwn: true) }
             }
             .disabled(model.isSaving)
         }
         .animation(Animation.pgymSpring(reduceMotion: reduceMotion), value: model.errorText)
+    }
+
+    @MainActor
+    private func finish(buildOwn: Bool = false) async {
+        await model.finish(
+            buildOwn: buildOwn,
+            session: session,
+            scheduler: services.reminders,
+            routines: RoutineStore(context: context)
+        )
+        // The adopted starter goes up to Firestore through the routines sync.
+        if model.errorText == nil { RoutineSyncCoordinator.shared.requestSync() }
     }
 }
 
 /// One starter: name, how many workouts rotate, the first exercises, and the "Fits 4 days" tag.
 private struct StarterCard: View {
     let starter: StarterRoutine
+    /// The starter's exercises on one line.
+    let exercises: String
     let isSelected: Bool
     let fitsTag: String?
     let action: () -> Void
@@ -87,7 +106,7 @@ private struct StarterCard: View {
                     Text(starter.caption)
                         .pgymText(.body, size: 15)
                         .foregroundStyle(Color.bone)
-                    Text(starter.summary)
+                    Text(exercises)
                         .pgymText(.label, size: 10)
                         .foregroundStyle(Color.steel)
                         .lineLimit(2)
@@ -110,6 +129,6 @@ private struct StarterCard: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityIdentifier("b4.starter.\(starter.rawValue)")
+        .accessibilityIdentifier("b4.starter.\(starter.id)")
     }
 }

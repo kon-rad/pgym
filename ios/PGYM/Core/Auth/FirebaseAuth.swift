@@ -201,15 +201,6 @@ final class FirestoreUserRepository: UserRepository {
         try await document(uid).setData(settings.firestoreFields, merge: true)
     }
 
-    func saveRoutines(_ routines: [RoutineDraft], uid: String) async throws {
-        let batch = db.batch()
-        for routine in routines {
-            let ref = document(uid).collection("routines").document(routine.id)
-            batch.setData(routine.firestoreFields, forDocument: ref)
-        }
-        try await batch.commit()
-    }
-
     func createProfileIfMissing(_ profile: NewUserProfile) async throws -> Bool {
         let ref = document(profile.uid)
         var fields = profile.firestoreFields

@@ -67,6 +67,7 @@ struct RootTabView_Previews: PreviewProvider {
         RootTabView()
             .environment(AppSession(dependencies: .fake()))
             .environment(NetworkMonitor(fixed: true))
+            .modelContainer(Models.makeContainer(inMemory: true))
             .preferredColorScheme(.dark)
     }
 }

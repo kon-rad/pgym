@@ -210,15 +210,13 @@ final class AppSession {
     /// The time zone that decides which week a session falls in.
     var userTimezone: String { timezone }
 
-    /// Onboarding's last step. Writes the answers to `users/{uid}` and the starter routines,
-    /// then opens the tabs. Throws (and stays on onboarding) if the write fails; Firestore's
+    /// Onboarding's last step. Writes the answers to `users/{uid}`, then opens the tabs (the
+    /// starter routines go through `RoutineStore`, card I4). Throws (and stays on onboarding)
+    /// if the write fails; Firestore's
     /// offline cache normally accepts the write without a connection.
-    func completeOnboarding(_ settings: OnboardingSettings, routines: [RoutineDraft]) async throws {
+    func completeOnboarding(_ settings: OnboardingSettings) async throws {
         guard let user, route == .onboarding else { return }
         try await users.saveOnboarding(settings, uid: user.uid)
-        if !routines.isEmpty {
-            try await users.saveRoutines(routines, uid: user.uid)
-        }
         var updated = profile ?? UserProfile(uid: user.uid)
         updated.goalPerWeek = settings.plan.goal
         updated.gymDays = settings.plan.orderedDays

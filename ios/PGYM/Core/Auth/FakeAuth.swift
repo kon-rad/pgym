@@ -192,8 +192,6 @@ final class FakeUserRepository: UserRepository {
 
     /// Every onboarding write, in order.
     private(set) var onboardingWrites: [(uid: String, settings: OnboardingSettings)] = []
-    /// `users/{uid}/routines`, by uid then routine ID.
-    private(set) var routines: [String: [String: RoutineDraft]] = [:]
 
     func saveOnboarding(_ settings: OnboardingSettings, uid: String) async throws {
         try failIfAsked()
@@ -204,13 +202,6 @@ final class FakeUserRepository: UserRepository {
         doc.reminderTime = settings.plan.time
         doc.units = settings.units
         documents[uid] = doc
-    }
-
-    func saveRoutines(_ routines: [RoutineDraft], uid: String) async throws {
-        try failIfAsked()
-        for routine in routines {
-            self.routines[uid, default: [:]][routine.id] = routine
-        }
     }
 }
 

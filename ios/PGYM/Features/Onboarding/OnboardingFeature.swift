@@ -42,10 +42,18 @@ struct OnboardingDraft: Codable, Equatable, Sendable {
     var time: ReminderTime = .default
     var units: NewUserProfile.Units
     var reminders: ReminderAnswer = .notAsked
-    /// Nil until the user picks; B4 pre-selects the one that fits the goal.
-    var starter: StarterRoutine?
+    /// The picked starter's `StarterRoutine.id`. Nil until the user picks; B4 pre-selects the one
+    /// that fits the goal.
+    var starterID: String?
     /// "Build my own" on B4: no starter is written; F3 (card I4) takes over.
     var buildOwn = false
+}
+
+extension StarterRoutine {
+    /// The shipped starter with this ID, for a draft read back from disk.
+    static func withID(_ id: String?) -> StarterRoutine? {
+        all.first { $0.id == id }
+    }
 }
 
 /// Where the draft lives between launches, one per user.
@@ -135,7 +143,7 @@ final class OnboardingModel {
         update {
             $0.goal = goal
             $0.days = GoalPolicy.defaultDays(for: goal)
-            $0.starter = nil
+            $0.starterID = nil
         }
     }
 
@@ -188,7 +196,7 @@ final class OnboardingModel {
 
     /// B3's preview line, built from the real reminder copy.
     var previewTitle: String {
-        ReminderCopy.title(routine: selectedStarter.routines.first?.name, time: draft.time.formatted())
+        ReminderCopy.title(routine: selectedStarter.workouts.first?.name, time: draft.time.formatted())
     }
 
     var previewBody: String {
@@ -212,12 +220,12 @@ final class OnboardingModel {
 
     // MARK: B4 First routine
 
-    var suggestedStarter: StarterRoutine { StarterRoutine.suggested(for: goal) }
-    var selectedStarter: StarterRoutine { draft.starter ?? suggestedStarter }
+    var suggestedStarter: StarterRoutine { StarterRoutine.suggested(forGoal: goal) }
+    var selectedStarter: StarterRoutine { StarterRoutine.withID(draft.starterID) ?? suggestedStarter }
 
     func pickStarter(_ starter: StarterRoutine) {
         update {
-            $0.starter = starter
+            $0.starterID = starter.id
             $0.buildOwn = false
         }
     }
@@ -245,8 +253,14 @@ final class OnboardingModel {
     }
 
     /// B4's main button ("Use this routine") or "Build my own": saves everything to `users/{uid}`,
-    /// writes the starter's routines, schedules the reminders, then Today.
-    func finish(buildOwn: Bool = false, session: AppSession, scheduler: ReminderScheduler) async {
+    /// copies the starter into the phone's routines (card I4's store; its sync sends them to
+    /// Firestore), schedules the reminders, then Today.
+    func finish(
+        buildOwn: Bool = false,
+        session: AppSession,
+        scheduler: ReminderScheduler,
+        routines routineStore: RoutineStore
+    ) async {
         guard let plan, !isSaving else { return }
         isSaving = true
         defer { isSaving = false }
@@ -254,17 +268,21 @@ final class OnboardingModel {
         update { $0.buildOwn = buildOwn }
 
         let starter = selectedStarter
-        let routines = buildOwn ? [] : starter.routines
         let settings = OnboardingSettings(plan: plan, units: draft.units, timezone: session.userTimezone)
         do {
-            try await session.completeOnboarding(settings, routines: routines)
+            try await session.completeOnboarding(settings)
         } catch {
             errorText = OnboardingCopy.couldNotSave
             return
         }
+        // After the save, so a failed save that is retried never adopts the starter twice. If the
+        // local write fails the user still lands on the tabs, where F2 offers the starters again.
+        if !buildOwn, session.route == .main {
+            _ = try? routineStore.adopt(starter)
+        }
 
         var facts = ReminderFacts()
-        facts.routineNames = routines.map(\.name)
+        facts.routineNames = buildOwn ? [] : starter.workouts.map(\.name)
         facts.unitsLabel = draft.units.rawValue
         facts.weekToLock = (session.profile?.streakWeeks ?? 0) + 1
         facts.nextProof = (session.profile?.proofCount ?? 0) + 1
