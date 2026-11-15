@@ -34,4 +34,4 @@ See `AGENTS.md`. The short version: no secrets in the repo, placeholders for any
 
 ## Licence
 
-Not chosen yet. Until a LICENSE file is added, all rights are reserved by the author.
+MIT. See `LICENSE`.
