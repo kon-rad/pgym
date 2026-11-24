@@ -22,15 +22,15 @@ Status: early build. Nothing here is released yet.
 2. You take one photo with the in-app camera when you finish.
 3. The server stamps the session with the time and a proof number, and the app renders a card you can share.
 
-Sign-in is Firebase Authentication (Apple, Google, or email and password). Photos are stored in a private AWS S3 bucket and are only reachable through short-lived signed URLs.
+Sign-in is Firebase Authentication (Apple, Google, or email and password). Proof media stays in protected local app storage according to the user's settings.
 
 ## Agent access
 
-PGYM is agent-first: you can create a personal access token in the app and give it to your own AI agent. The token is read-only and scoped (`read:profile`, `read:sessions`, `read:stats`, `read:photos`). An agent can read your sessions, streak and lifts; it cannot create a proof.
+PGYM is agent-first: you can create a personal access token in the app and give it to your own AI agent. The token is read-only and scoped (`read:profile`, `read:sessions`, `read:stats`). An agent can read structured sessions, streak and lifts; it cannot read local media, local insights or create a proof.
 
 ## Running locally
 
-The whole stack is meant to run on one machine with no cloud account: the Firebase emulator, a local S3 stand-in (MinIO) and a fake vision client. Each folder's README says how once its first code lands.
+The whole stack is meant to run on one machine with no cloud account: the Firebase emulator and a fake vision client. Each folder's README has its local commands.
 
 ## Rules for contributors, human or agent
 

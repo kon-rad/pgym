@@ -7,7 +7,6 @@ enum ProgressRoute: Hashable {
     case wall
     case session(String)
     case lift(String)
-    case scores
 }
 
 /// E1 Progress: visible progress in one scroll. Proofs, streak and score; the last 12 weeks against
@@ -17,11 +16,9 @@ enum ProgressRoute: Hashable {
 struct ProgressScreen: View {
     static let viewID = "E1"
 
-    @Environment(\.modelContext) private var context
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppSession.self) private var account: AppSession?
     @Environment(AppServices.self) private var services: AppServices?
-    @Environment(ProofServices.self) private var proofs
     @Environment(NetworkMonitor.self) private var network: NetworkMonitor?
     @Environment(SessionSyncQueue.self) private var sync: SessionSyncQueue?
     @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
@@ -35,10 +32,6 @@ struct ProgressScreen: View {
     }
 
     private var unit: WeightUnit { WeightUnit.preferred(profile: account?.profile?.units) }
-    private var isAdult: Bool {
-        PhysiqueRules.isAdult(birthYear: account?.profile?.birthYear, currentYear: AgePolicy.currentYear())
-    }
-
     var body: some View {
         let snapshots = SessionSnapshot.all(sessions)
         NavigationStack(path: $path) {
@@ -71,7 +64,6 @@ struct ProgressScreen: View {
                 case .wall: ProofWallScreen()
                 case let .session(id): SessionDetailScreen(sessionID: id)
                 case let .lift(id): LiftDetailScreen(exerciseId: id)
-                case .scores: ScoreHistoryScreen()
                 }
             }
             .accessibilityElement(children: .contain)
@@ -85,7 +77,6 @@ struct ProgressScreen: View {
         let facts = StreakFacts.make(sessions: snapshots, profile: account?.profile, now: .now, timeZone: .current)
         let proofsOnly = snapshots.filter(\.isProof)
         let lifts = ProgressModel.lifts(snapshots)
-        let scores = ProgressModel.scoreHistory(snapshots)
 
         stats(facts: facts, snapshots: snapshots)
         stateLines
@@ -106,13 +97,6 @@ struct ProgressScreen: View {
 
         liftsSection(lifts)
 
-        if proofs.consent.isOn, scores.contains(where: { $0.score != nil }) {
-            NavigationLink(value: ProgressRoute.scores) {
-                LinkRow(title: ProgressCopy.scoreHistoryRow, detail: ProgressModel.latestScore(snapshots).map(String.init))
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("e1.scores")
-        }
     }
 
     // MARK: Stats
@@ -122,18 +106,6 @@ struct ProgressScreen: View {
             StatTile(label: ProgressCopy.proofs, value: "\(facts.proofCount)")
                 .contentTransition(.numericText())
             StatTile(label: ProgressCopy.streak, value: "\(facts.streakWeeks)", unit: facts.streakWeeks == 1 ? "week" : "weeks")
-            if isAdult {
-                Button {
-                    path.append(.scores)
-                } label: {
-                    StatTile(
-                        label: ProgressCopy.score,
-                        value: proofs.consent.isOn ? (ProgressModel.latestScore(snapshots).map(String.init) ?? "-") : ProgressCopy.scoreOff
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("e1.scoreTile")
-            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("e1.stats")
@@ -264,17 +236,7 @@ struct ProgressScreen: View {
     // MARK: Refresh
 
     private func refresh() async {
-        guard let uid = account?.user?.uid else {
-            phase = .loaded
-            return
-        }
-        do {
-            try await proofs.controls.refreshScores(uid: uid, context: context)
-            phase = .loaded
-        } catch {
-            // The phone's copy still shows; the error says the server copy could not be read.
-            phase = network?.isOnline == false ? .loaded : .failed
-        }
+        phase = .loaded
     }
 }
 
