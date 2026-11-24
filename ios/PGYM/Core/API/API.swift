@@ -7,9 +7,8 @@ import Foundation
 /// (or MinIO locally). Every call carries the Firebase ID token and, on the Firebase backend, an
 /// App Check token (`FirebaseProofAPI`, `FirebaseBootstrap`).
 enum API {
-    static let createUploadUrls = "createUploadUrls"
-    static let getPhotoUrls = "getPhotoUrls"
     static let stampSession = "stampSession"
+    static let analyzePhotoInsight = "analyzePhotoInsight"
 
     /// `PHOTO_CONTENT_TYPE` in `backend/src/photoStore.ts`; part of the PUT signature.
     static let photoContentType = "image/jpeg"
@@ -259,4 +258,12 @@ protocol ProofAPI: AnyObject {
     func getPhotoUrls(keys: [String]) async throws -> SignedPhotoLinks
     /// Server time, proof number, streak and stats. Idempotent per session: a retry returns the same number.
     func stampSession(sessionID: String) async throws -> StampReceipt
+    /// Privacy-first stamp. The digest binds the receipt to exact local JPEG bytes; no media is sent.
+    func stampSession(
+        sessionID: String,
+        photoSHA256: String,
+        cardFormatVersion: Int,
+        filter: String,
+        proofImageCreated: Bool
+    ) async throws -> StampReceipt
 }

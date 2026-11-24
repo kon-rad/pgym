@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftData
+import CryptoKit
 
 /// Where one session's stamp is, for D11's stamp area (D9's states, pgym-flow-spec.md "D9 Stamping").
 enum StampPhase: Equatable, Sendable {
@@ -61,26 +62,19 @@ final class ProofStampEngine {
 
     func stamp(sessionID: String, phase: @escaping @MainActor (StampPhase) -> Void) async throws -> StampReceipt {
         let photo = store.photoURL(sessionID)
-        let card = store.cardURL(sessionID)
-        guard let photoBytes = Self.size(of: photo), let cardBytes = Self.size(of: card) else {
+        guard let photoData = try? Data(contentsOf: photo), store.hasCard(sessionID),
+              let record = store.record(sessionID) else {
             throw StampError.missingFiles
         }
-        do {
-            var targets = try await api.createUploadUrls(sessionID: sessionID, photoBytes: photoBytes, cardBytes: cardBytes)
-            let total = Double(photoBytes + cardBytes)
-            let photoShare = Double(photoBytes) / total
-            phase(.uploading(0))
-            try await put(photo, which: \.photo, targets: &targets, sessionID: sessionID, photoBytes: photoBytes, cardBytes: cardBytes) { fraction in
-                phase(.uploading(fraction * photoShare))
-            }
-            try await put(card, which: \.card, targets: &targets, sessionID: sessionID, photoBytes: photoBytes, cardBytes: cardBytes) { fraction in
-                phase(.uploading(photoShare + fraction * (1 - photoShare)))
-            }
-        } catch ProofAPIError.alreadyStamped {
-            // Stamped by an earlier run whose answer never arrived: ask again for the same number.
-        }
         phase(.stamping)
-        return try await api.stampSession(sessionID: sessionID)
+        let digest = SHA256.hash(data: photoData).map { String(format: "%02x", $0) }.joined()
+        return try await api.stampSession(
+            sessionID: sessionID,
+            photoSHA256: digest,
+            cardFormatVersion: 1,
+            filter: record.options.filter.rawValue,
+            proofImageCreated: true
+        )
     }
 
     private func put(
@@ -278,8 +272,8 @@ final class ProofStampQueue {
     private func apply(_ receipt: StampReceipt, to session: WorkoutSession, uid: String, scoreRequested: Bool, context: ModelContext) {
         session.proofNumber = receipt.proofNumber
         session.stampedAt = receipt.stampedAt
-        session.photoKey = API.photoKey(uid: uid, sessionID: session.id)
-        session.cardKey = API.cardKey(uid: uid, sessionID: session.id)
+        session.photoKey = nil
+        session.cardKey = nil
         session.stampReceipt = receipt
         // A retry of a session stamped earlier keeps what was decided at that first stamp.
         if session.physiqueRequested == nil { session.physiqueRequested = scoreRequested }

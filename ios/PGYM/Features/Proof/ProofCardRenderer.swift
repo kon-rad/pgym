@@ -202,6 +202,12 @@ enum ProofCardRenderer {
             draw(ctx, ProofTextRun(text: line, font: nameFont), at: CGPoint(x: 64, y: layout.y(baseline)), color: Palette.chalk)
         }
 
+        if let insight = summary.trainingInsight, !insight.isEmpty {
+            let font = ProofCardFont.mono(18)
+            let line = ProofCardText.truncate(insight, font: font, maxWidth: width, tracking: 0.5)
+            draw(ctx, ProofTextRun(text: line, font: font, tracking: 0.5), at: CGPoint(x: 64, y: layout.y(1110)), color: Palette.chalk)
+        }
+
         let columns: [CGFloat] = [64, 392, 720]
         let labelFont = ProofCardFont.mono(ProofCardText.labelSize)
         for (stat, x) in zip(stats, columns) {

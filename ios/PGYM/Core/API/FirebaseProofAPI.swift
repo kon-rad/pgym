@@ -29,7 +29,17 @@ final class FirebaseProofAPI: ProofAPI {
     }
 
     func stampSession(sessionID: String) async throws -> StampReceipt {
-        let data = try await call(API.stampSession, ["sessionId": sessionID])
+        throw ProofAPIError.invalid("Proof metadata is required.")
+    }
+
+    func stampSession(sessionID: String, photoSHA256: String, cardFormatVersion: Int, filter: String, proofImageCreated: Bool) async throws -> StampReceipt {
+        let data = try await call(API.stampSession, [
+            "sessionId": sessionID,
+            "photoSHA256": photoSHA256,
+            "cardFormatVersion": cardFormatVersion,
+            "filter": filter,
+            "proofImageCreated": proofImageCreated,
+        ])
         guard let receipt = StampReceipt(callable: data) else { throw ProofAPIError.invalid(API.stampSession) }
         return receipt
     }

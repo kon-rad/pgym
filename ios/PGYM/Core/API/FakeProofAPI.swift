@@ -88,15 +88,19 @@ final class FakeProofAPI: ProofAPI {
     }
 
     func stampSession(sessionID: String) async throws -> StampReceipt {
+        try await stampSession(sessionID: sessionID, photoSHA256: String(repeating: "0", count: 64), cardFormatVersion: 1, filter: "iron", proofImageCreated: true)
+    }
+
+    func stampSession(sessionID: String, photoSHA256: String, cardFormatVersion: Int, filter: String, proofImageCreated: Bool) async throws -> StampReceipt {
         stampCalls.append(sessionID)
         if !stampFailures.isEmpty { throw stampFailures.removeFirst() }
         if var existing = receipts[sessionID] {
             existing.alreadyStamped = true
             return existing
         }
-        guard objects.has(API.photoKey(uid: uid, sessionID: sessionID)),
-              objects.has(API.cardKey(uid: uid, sessionID: sessionID))
-        else { throw ProofAPIError.notUploaded }
+        guard photoSHA256.count == 64, cardFormatVersion == 1, proofImageCreated,
+              ["iron", "chalk", "plate", "raw"].contains(filter)
+        else { throw ProofAPIError.invalid("proof metadata") }
         lastProofNumber += 1
         let weekCount = weekCountBefore + receipts.count + 1
         let hit = weekCount >= weekGoal

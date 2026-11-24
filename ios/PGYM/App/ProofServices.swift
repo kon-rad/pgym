@@ -76,12 +76,23 @@ final class ProofServices {
         queue.restampCard = { session, receipt in
             let jpeg = try ProofFeature.restampCard(session: session, receipt: receipt, unit: unit(), store: store)
             if let key = session.cardKey { images.store(jpeg, for: key) }
+            let preferences = ProofPreferences()
+            if preferences.deleteOriginalAfterCard { store.removeOriginal(session.id) }
+            if preferences.automaticallySaveCardsToPhotos {
+                Task { try? await ProofPhotoSaver.save(jpeg) }
+            }
         }
         queue.onStamped = { session, _ in
             let startedAt = session.startedAt
             Task { await reminders.sessionLogged(at: startedAt) }
         }
         sessionSync.onFlushed = { [weak queue] in queue?.requestStamp() }
+    }
+
+    /// Called after the current completion/share flow. Non-retained cards are temporary until here.
+    func finishCompletionFlow(sessionID: String) {
+        if !ProofPreferences().keepCardsOnPhone { store.removeCard(sessionID) }
+        completedSessionID = nil
     }
 
     /// Picks the implementations for the backend chosen at launch.
