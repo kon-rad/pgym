@@ -40,6 +40,7 @@ final class FakeProofAPI: ProofAPI {
     private(set) var receipts: [String: StampReceipt] = [:]
     private var lastProofNumber: Int
     private var urlSerial = 0
+    var nextInsight: String? = "Keep the same framing next time to make changes easier to notice."
 
     init(
         objects: FakeObjectStore = FakeObjectStore(),
@@ -123,6 +124,11 @@ final class FakeProofAPI: ProofAPI {
         )
         receipts[sessionID] = receipt
         return receipt
+    }
+
+    func analyzePhotoInsight(jpeg: Data) async throws -> String {
+        guard let nextInsight else { throw ProofAPIError.unavailable }
+        return nextInsight
     }
 
     private func signedURL(_ key: String, method: String) -> URL {

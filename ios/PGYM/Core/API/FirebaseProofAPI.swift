@@ -44,6 +44,13 @@ final class FirebaseProofAPI: ProofAPI {
         return receipt
     }
 
+    func analyzePhotoInsight(jpeg: Data) async throws -> String {
+        guard jpeg.count <= 4 * 1024 * 1024 else { throw ProofAPIError.invalid("Reduced photo is too large.") }
+        let data = try await call(API.analyzePhotoInsight, ["consent": true, "imageBase64": jpeg.base64EncodedString()])
+        guard let insight = data["insight"] as? String, !insight.isEmpty else { throw ProofAPIError.invalid(API.analyzePhotoInsight) }
+        return insight
+    }
+
     private func call(_ name: String, _ payload: [String: Any]) async throws -> [String: Any] {
         let result: HTTPSCallableResult
         do {

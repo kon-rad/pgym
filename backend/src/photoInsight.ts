@@ -52,7 +52,7 @@ export async function analyzePhotoInsight(
     throw new HttpsError('invalid-argument', 'The image must be a reduced JPEG under 4 MB.');
   }
   const user = (await deps.db.doc(`users/${uid}`).get()).data();
-  if (user?.photoAnalysisConsent !== true || !adult(user.birthYear, deps.now())) {
+  if ((user?.photoAnalysisConsent !== true && user?.physiqueConsent !== true) || !adult(user.birthYear, deps.now())) {
     throw new HttpsError('permission-denied', 'Photo analysis is unavailable.');
   }
 

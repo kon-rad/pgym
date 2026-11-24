@@ -41,6 +41,7 @@ final class ProofStampEngine {
     /// Pause before the second, third... try of one file.
     let uploadRetryDelays: [TimeInterval]
     private let sleep: (TimeInterval) async -> Void
+    private(set) var insights: [String: String] = [:]
 
     init(
         api: ProofAPI,
@@ -60,13 +61,16 @@ final class ProofStampEngine {
         self.sleep = sleep
     }
 
-    func stamp(sessionID: String, phase: @escaping @MainActor (StampPhase) -> Void) async throws -> StampReceipt {
+    func stamp(sessionID: String, analyze: Bool = false, phase: @escaping @MainActor (StampPhase) -> Void) async throws -> StampReceipt {
         let photo = store.photoURL(sessionID)
         guard let photoData = try? Data(contentsOf: photo), store.hasCard(sessionID),
               let record = store.record(sessionID) else {
             throw StampError.missingFiles
         }
         phase(.stamping)
+        if analyze, let insight = try? await api.analyzePhotoInsight(jpeg: photoData) {
+            insights[sessionID] = insight
+        }
         let digest = SHA256.hash(data: photoData).map { String(format: "%02x", $0) }.joined()
         return try await api.stampSession(
             sessionID: sessionID,
@@ -235,9 +239,10 @@ final class ProofStampQueue {
                 await beforeStamp()
                 let scoreRequested = physiqueEnabled()
                 do {
-                    let receipt = try await engine.stamp(sessionID: id) { [weak self] phase in
+                    let receipt = try await engine.stamp(sessionID: id, analyze: scoreRequested) { [weak self] phase in
                         self?.phases[id] = phase
                     }
+                    session.physiqueTip = engine.insights[id]
                     apply(receipt, to: session, uid: uid, scoreRequested: scoreRequested, context: context)
                 } catch {
                     let apiError = error as? ProofAPIError

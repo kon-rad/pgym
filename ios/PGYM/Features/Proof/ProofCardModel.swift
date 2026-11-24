@@ -180,7 +180,8 @@ extension ProofCardSummary {
             topLift: top,
             unit: unit,
             timezone: session.timezone,
-            stamp: stamp
+            stamp: stamp,
+            trainingInsight: session.physiqueTip
         )
     }
 }
