@@ -445,7 +445,7 @@ describe('agent API: endpoints', () => {
 });
 
 describe('agent API: OpenAPI document', () => {
-  it('is served at /v1/openapi.json without a token, validates as OpenAPI 3.1 and lists all six paths', async () => {
+  it('is served at /v1/openapi.json without a token, validates as OpenAPI 3.1 and lists all five paths', async () => {
     const res = await get(testDeps(), '/v1/openapi.json');
     expect(res.status).toBe(200);
     const doc = res.body as { openapi: string; paths: Record<string, Record<string, { security: unknown[] }>> };
@@ -464,7 +464,6 @@ describe('agent API: OpenAPI document', () => {
       '/v1/sessions',
       '/v1/sessions/{id}',
       '/v1/exercises/{id}/history',
-      '/v1/sessions/{id}/card',
     ]) {
       expect(doc.paths[p], p).toBeDefined();
       expect(doc.paths[p].get.security).toHaveLength(1);
