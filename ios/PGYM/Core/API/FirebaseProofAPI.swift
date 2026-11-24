@@ -17,15 +17,11 @@ final class FirebaseProofAPI: ProofAPI {
     }
 
     func createUploadUrls(sessionID: String, photoBytes: Int, cardBytes: Int) async throws -> UploadTargets {
-        let data = try await call(API.createUploadUrls, ["sessionId": sessionID, "photoBytes": photoBytes, "cardBytes": cardBytes])
-        guard let targets = UploadTargets(callable: data) else { throw ProofAPIError.invalid(API.createUploadUrls) }
-        return targets
+        throw ProofAPIError.invalid("Remote proof uploads are retired.")
     }
 
     func getPhotoUrls(keys: [String]) async throws -> SignedPhotoLinks {
-        let data = try await call(API.getPhotoUrls, ["keys": keys])
-        guard let links = SignedPhotoLinks(callable: data) else { throw ProofAPIError.invalid(API.getPhotoUrls) }
-        return links
+        throw ProofAPIError.invalid("Remote proof reads are retired.")
     }
 
     func stampSession(sessionID: String) async throws -> StampReceipt {
