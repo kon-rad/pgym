@@ -4,13 +4,12 @@ import { createAgentToken, revokeAgentToken } from '../src/agentTokens';
 import { handleApi, type ApiResponse } from '../src/api';
 import type { Scope } from '../src/apiSchemas';
 import * as h from '../src/handlers';
-import { cardKey, photoKey } from '../src/photoStore';
 import { adminDb, newUid, requireEmulator, testDeps } from './helpers';
 
 beforeAll(() => requireEmulator());
 
 const NOW = new Date('2026-11-18T18:00:00Z'); // Wednesday of 2026-W47
-const ALL: Scope[] = ['read:profile', 'read:sessions', 'read:stats', 'read:photos'];
+const ALL: Scope[] = ['read:profile', 'read:sessions', 'read:stats'];
 
 type Deps = ReturnType<typeof testDeps>;
 
@@ -78,9 +77,13 @@ async function seedSession(uid: string, id: string, startedAt: Date, fields: Rec
 /** A session stamped by the real stampSession handler. */
 async function stamped(deps: Deps, uid: string, id: string, startedAt: Date, fields: Record<string, unknown> = {}): Promise<void> {
   await seedSession(uid, id, startedAt, fields);
-  deps.store.put(photoKey(uid, id));
-  deps.store.put(cardKey(uid, id));
-  await h.stampSession(deps, uid, { sessionId: id });
+  await h.stampSession(deps, uid, {
+    sessionId: id,
+    photoSHA256: 'a'.repeat(64),
+    cardFormatVersion: 1,
+    filter: 'iron',
+    proofImageCreated: true,
+  });
 }
 
 describe('agent API: authentication', () => {
@@ -166,7 +169,6 @@ describe('agent API: scopes', () => {
     ['/v1/sessions', 'read:sessions'],
     ['/v1/sessions/s1', 'read:sessions'],
     ['/v1/exercises/bench-press/history', 'read:sessions'],
-    ['/v1/sessions/s1/card', 'read:photos'],
   ])('%s without %s gives 403 insufficient_scope', async (path, scope) => {
     const deps = testDeps({ now: () => NOW });
     const uid = newUid('scope');
@@ -377,46 +379,6 @@ describe('agent API: endpoints', () => {
     expect(code(bad)).toBe('invalid_request');
   });
 
-  describe('physique score', () => {
-    const PHYSIQUE = { score: 61, tip: 'Add a set of rows.', model: 'fake', analyzedAt: Timestamp.fromDate(NOW) };
-
-    async function setup(consent: boolean) {
-      const deps = testDeps({ now: () => NOW });
-      const uid = newUid('phy');
-      await seedUser(uid, { physiqueConsent: consent });
-      await stamped(deps, uid, 's1', new Date(NOW.getTime() - 2 * 3600_000));
-      await adminDb().doc(`users/${uid}/sessions/s1`).update({ physique: PHYSIQUE });
-      return { deps, uid };
-    }
-
-    it('is omitted without read:photos', async () => {
-      const { deps, uid } = await setup(true);
-      const res = await get(deps, '/v1/sessions/s1', await token(deps, uid, ['read:sessions', 'read:profile', 'read:stats']));
-      expect(res.status).toBe(200);
-      expect(res.body).not.toHaveProperty('physique');
-      expect(JSON.stringify(res.body)).not.toContain('Add a set of rows');
-    });
-
-    it('is included with read:photos when the owner turned the score on', async () => {
-      const { deps, uid } = await setup(true);
-      const res = await get(deps, '/v1/sessions/s1', await token(deps, uid, ['read:sessions', 'read:photos']));
-      expect((res.body as { physique: unknown }).physique).toEqual({ score: 61, tip: 'Add a set of rows.', analyzedAt: NOW.toISOString() });
-    });
-
-    it('is omitted with read:photos when the owner turned the score off', async () => {
-      const { deps, uid } = await setup(false);
-      const res = await get(deps, '/v1/sessions/s1', await token(deps, uid, ['read:sessions', 'read:photos']));
-      expect(res.body).not.toHaveProperty('physique');
-    });
-
-    it('shows only the reason when the photo could not be scored', async () => {
-      const { deps, uid } = await setup(true);
-      await adminDb().doc(`users/${uid}/sessions/s1`).update({ physique: { refusedReason: 'too_dark' } });
-      const res = await get(deps, '/v1/sessions/s1', await token(deps, uid, ['read:sessions', 'read:photos']));
-      expect((res.body as { physique: unknown }).physique).toEqual({ refusedReason: 'too_dark' });
-    });
-  });
-
   it('GET /v1/exercises/{id}/history returns sets, best set and e1RM over time', async () => {
     const deps = testDeps({ now: () => NOW });
     const uid = newUid('hist');
@@ -454,22 +416,6 @@ describe('agent API: endpoints', () => {
       nextCursor: null,
     });
     expect((await get(deps, '/v1/exercises/deadlift/history', tok)).status).toBe(404);
-  });
-
-  it('GET /v1/sessions/{id}/card gives a 10-minute signed link for a stamped session only', async () => {
-    const deps = testDeps({ now: () => NOW });
-    const uid = newUid('card');
-    await seedUser(uid);
-    await stamped(deps, uid, 's1', new Date(NOW.getTime() - 2 * 3600_000));
-    await seedSession(uid, 'f1', new Date(NOW.getTime() - 3 * 3600_000));
-    const tok = await token(deps, uid, ['read:photos']);
-    const res = await get(deps, '/v1/sessions/s1/card', tok);
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      url: `https://s3.test/users/${uid}/sessions/s1/card.jpg?op=get&expires=600`,
-      expiresAt: new Date(NOW.getTime() + 600_000).toISOString(),
-    });
-    expect((await get(deps, '/v1/sessions/f1/card', tok)).status).toBe(404);
   });
 
   it('is read-only: POST gives 405, an unknown path 404', async () => {

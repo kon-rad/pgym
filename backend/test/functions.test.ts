@@ -47,19 +47,27 @@ function uploadBoth(store: { put(k: string): void }, uid: string, sessionId: str
   store.put(cardKey(uid, sessionId));
 }
 
+const stamp = (sessionId: string) => ({
+  sessionId,
+  photoSHA256: 'a'.repeat(64),
+  cardFormatVersion: 1,
+  filter: 'iron',
+  proofImageCreated: true,
+});
+
 async function expectHttpsError(p: Promise<unknown>, code: string): Promise<void> {
   await expect(p).rejects.toMatchObject({ code });
 }
 
 describe('stampSession', () => {
-  it('fails when the photo object is missing, and changes nothing', async () => {
+  it('fails when proof metadata is missing, and changes nothing', async () => {
     const deps = testDeps({ now: () => NOW });
     const uid = newUid('u');
     await seedUser(uid);
     await seedSession(uid, 's1');
     deps.store.put(cardKey(uid, 's1')); // card uploaded, photo not
 
-    await expectHttpsError(h.stampSession(deps, uid, { sessionId: 's1' }), 'failed-precondition');
+    await expectHttpsError(h.stampSession(deps, uid, { sessionId: 's1' }), 'invalid-argument');
 
     const s = (await adminDb().doc(`users/${uid}/sessions/s1`).get()).data()!;
     expect(s.status).toBe('finished');
@@ -76,7 +84,7 @@ describe('stampSession', () => {
     await seedSession(uid, 's1', { stampedAt: Timestamp.fromDate(new Date('2020-01-01T00:00:00Z')), setCount: 999 });
     uploadBoth(deps.store, uid, 's1');
 
-    const r = await h.stampSession(deps, uid, { sessionId: 's1' });
+    const r = await h.stampSession(deps, uid, stamp('s1'));
 
     expect(r).toMatchObject({
       proofNumber: 1,
@@ -92,7 +100,12 @@ describe('stampSession', () => {
     const s = (await adminDb().doc(`users/${uid}/sessions/s1`).get()).data()!;
     expect(s.status).toBe('stamped');
     expect(s.stampedAt.toDate().toISOString()).toBe(NOW.toISOString());
-    expect(s.photoKey).toBe(photoKey(uid, 's1'));
+    expect(s.photoSHA256).toBe('a'.repeat(64));
+    expect(s.cardFormatVersion).toBe(1);
+    expect(s.cardFilter).toBe('iron');
+    expect(s.proofImageCreated).toBe(true);
+    expect(s.photoKey).toBeUndefined();
+    expect(s.cardKey).toBeUndefined();
     const stats = (await adminDb().doc(`users/${uid}/exerciseStats/bench`).get()).data()!;
     expect(stats).toMatchObject({ bestWeight: 82.5, sessionCount: 1 });
     const u = (await adminDb().doc(`users/${uid}`).get()).data()!;
@@ -110,8 +123,8 @@ describe('stampSession', () => {
     uploadBoth(deps.store, uid, 'b');
 
     const [ra, rb] = await Promise.all([
-      h.stampSession(deps, uid, { sessionId: 'a' }),
-      h.stampSession(deps, uid, { sessionId: 'b' }),
+      h.stampSession(deps, uid, stamp('a')),
+      h.stampSession(deps, uid, stamp('b')),
     ]);
 
     expect([ra.proofNumber, rb.proofNumber].sort((x, y) => x - y)).toEqual([42, 43]);
@@ -129,8 +142,8 @@ describe('stampSession', () => {
     uploadBoth(deps.store, uid, 's1');
 
     const [r1, r2] = await Promise.all([
-      h.stampSession(deps, uid, { sessionId: 's1' }),
-      h.stampSession(deps, uid, { sessionId: 's1' }),
+      h.stampSession(deps, uid, stamp('s1')),
+      h.stampSession(deps, uid, stamp('s1')),
     ]);
 
     expect(r1.proofNumber).toBe(1);
@@ -161,7 +174,7 @@ describe('stampSession', () => {
     });
     uploadBoth(deps.store, uid, 'late');
 
-    const r = await h.stampSession(deps, uid, { sessionId: 'late' });
+    const r = await h.stampSession(deps, uid, stamp('late'));
 
     expect(r).toMatchObject({ weekKey: '2026-W47', weekCount: 2, streakWeeks: 1 });
   });
@@ -224,8 +237,8 @@ describe('deleteSession', () => {
     });
     uploadBoth(deps.store, uid, 'a');
     uploadBoth(deps.store, uid, 'b');
-    await h.stampSession(deps, uid, { sessionId: 'a' });
-    await h.stampSession(deps, uid, { sessionId: 'b' });
+    await h.stampSession(deps, uid, stamp('a'));
+    await h.stampSession(deps, uid, stamp('b'));
     let u = (await adminDb().doc(`users/${uid}`).get()).data()!;
     expect(u).toMatchObject({ proofCount: 2, streakWeeks: 1 });
 
@@ -243,7 +256,7 @@ describe('deleteSession', () => {
     // A new stamp after the delete does not reuse proof number 2.
     await seedSession(uid, 'c');
     uploadBoth(deps.store, uid, 'c');
-    expect((await h.stampSession(deps, uid, { sessionId: 'c' })).proofNumber).toBe(3);
+    expect((await h.stampSession(deps, uid, stamp('c'))).proofNumber).toBe(3);
   });
 });
 

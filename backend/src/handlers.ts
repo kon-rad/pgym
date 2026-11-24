@@ -6,7 +6,6 @@
 import { Timestamp, type DocumentReference, type Firestore } from 'firebase-admin/firestore';
 import type { Auth } from 'firebase-admin/auth';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { isAdult } from './physique';
 import {
   GET_EXPIRES_SEC,
   ID_PATTERN,
@@ -48,11 +47,12 @@ export interface Logger {
 
 export interface Deps {
   db: Firestore;
-  store: PhotoStore;
+  /** Legacy prelaunch media cleanup only. Active proof creation never uses it. */
+  store?: PhotoStore;
   auth?: Auth;
   now: () => Date;
   log: Logger;
-  /** Called after a stamp when the user has consented to the score and is 18 or over. Queues analyzePhysique. */
+  /** Deprecated compatibility hook, ignored by privacy-first stamping. */
   enqueuePhysique?: (uid: string, sessionId: string) => Promise<void>;
 }
 
@@ -169,6 +169,7 @@ function requireBytes(data: unknown, field: 'photoBytes' | 'cardBytes'): number 
 }
 
 export async function createUploadUrls(deps: Deps, authUid: string | undefined, data: unknown): Promise<UploadUrls> {
+  if (!deps.store) throw new HttpsError('unimplemented', 'Remote proof media is retired.');
   const uid = requireUid(authUid);
   const sessionId = requireSessionId(data);
   const photoBytes = requireBytes(data, 'photoBytes');
@@ -197,6 +198,8 @@ export async function getPhotoUrls(
   authUid: string | undefined,
   data: unknown,
 ): Promise<{ urls: Record<string, string>; expiresInSec: number }> {
+  const store = deps.store;
+  if (!store) throw new HttpsError('unimplemented', 'Remote proof media is retired.');
   const uid = requireUid(authUid);
   const keys = (data as { keys?: unknown } | null)?.keys;
   if (!Array.isArray(keys) || keys.length === 0 || keys.length > MAX_KEYS_PER_CALL) {
@@ -206,7 +209,7 @@ export async function getPhotoUrls(
     if (!isOwnKey(uid, key)) throw new HttpsError('permission-denied', 'You can only read your own photos.');
   }
   const unique = [...new Set(keys as string[])];
-  const signed = await Promise.all(unique.map((k) => deps.store.presignGet(k, GET_EXPIRES_SEC)));
+  const signed = await Promise.all(unique.map((k) => store.presignGet(k, GET_EXPIRES_SEC)));
   const urls: Record<string, string> = {};
   unique.forEach((k, i) => (urls[k] = signed[i]));
   deps.log.info('getPhotoUrls', { uid, count: unique.length });
@@ -268,11 +271,23 @@ export async function stampSession(deps: Deps, authUid: string | undefined, data
     return resultFromStamped(sessionId, first.data()!, (await uRef.get()).data());
   }
 
-  const pk = photoKey(uid, sessionId);
-  const ck = cardKey(uid, sessionId);
-  const [hasPhoto, hasCard] = await Promise.all([deps.store.exists(pk), deps.store.exists(ck)]);
-  if (!hasPhoto) throw new HttpsError('failed-precondition', 'The photo has not been uploaded.');
-  if (!hasCard) throw new HttpsError('failed-precondition', 'The card has not been uploaded.');
+  const input = data as Record<string, unknown>;
+  const photoSHA256 = input.photoSHA256;
+  const cardFormatVersion = input.cardFormatVersion;
+  const filter = input.filter;
+  const proofImageCreated = input.proofImageCreated;
+  if (typeof photoSHA256 !== 'string' || !/^[a-f0-9]{64}$/.test(photoSHA256)) {
+    throw new HttpsError('invalid-argument', 'photoSHA256 must be a lowercase SHA-256 digest.');
+  }
+  if (typeof cardFormatVersion !== 'number' || !Number.isInteger(cardFormatVersion) || cardFormatVersion < 1 || cardFormatVersion > 100) {
+    throw new HttpsError('invalid-argument', 'cardFormatVersion is unsupported.');
+  }
+  if (typeof filter !== 'string' || !['iron', 'chalk', 'plate', 'raw'].includes(filter)) {
+    throw new HttpsError('invalid-argument', 'filter is unsupported.');
+  }
+  if (proofImageCreated !== true) {
+    throw new HttpsError('invalid-argument', 'proofImageCreated must be true.');
+  }
 
   const result = await deps.db.runTransaction(async (tx) => {
     const [sSnap, uSnap] = await Promise.all([tx.get(sRef), tx.get(uRef)]);
@@ -334,8 +349,10 @@ export async function stampSession(deps: Deps, authUid: string | undefined, data
       setCount: totals.setCount,
       totalVolume: totals.totalVolume,
       newBests,
-      photoKey: pk,
-      cardKey: ck,
+      photoSHA256,
+      cardFormatVersion,
+      cardFilter: filter,
+      proofImageCreated: true,
     });
     tx.update(uRef, { ...streak, lastProofNumber: proofNumber, proofCount });
 
@@ -371,17 +388,6 @@ export async function stampSession(deps: Deps, authUid: string | undefined, data
     alreadyStamped: result.alreadyStamped,
   });
 
-  if (!result.alreadyStamped && deps.enqueuePhysique) {
-    const u = (await uRef.get()).data();
-    if (u?.physiqueConsent === true && isAdult(u.birthYear, deps.now())) {
-      // The stamp is already committed; a queue error must not fail it. The session simply has no score.
-      try {
-        await deps.enqueuePhysique(uid, sessionId);
-      } catch (err) {
-        deps.log.warn('stampSession could not queue analyzePhysique', { uid, sessionId, error: String(err) });
-      }
-    }
-  }
   return result;
 }
 
@@ -400,7 +406,7 @@ export async function deleteSession(
   const uRef = deps.db.doc(`users/${uid}`);
 
   // Objects first: if this fails the document is still there and the call can be retried.
-  await deps.store.deleteKeys([photoKey(uid, sessionId), cardKey(uid, sessionId)]);
+  if (deps.store) await deps.store.deleteKeys([photoKey(uid, sessionId), cardKey(uid, sessionId)]);
 
   const deleted = await deps.db.runTransaction(async (tx) => {
     const [sSnap, uSnap] = await Promise.all([tx.get(sRef), tx.get(uRef)]);
@@ -465,8 +471,8 @@ export async function deleteAccount(
   const uid = requireUid(authUid);
 
   // 1. Every S3 object under the user.
-  const keys = await deps.store.listKeys(userPrefix(uid));
-  if (keys.length > 0) await deps.store.deleteKeys(keys);
+  const keys = deps.store ? await deps.store.listKeys(userPrefix(uid)) : [];
+  if (keys.length > 0) await deps.store!.deleteKeys(keys);
 
   // 2. Every document: the user and all subcollections.
   await deps.db.recursiveDelete(deps.db.doc(`users/${uid}`));

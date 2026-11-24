@@ -120,7 +120,9 @@ describe('stampSession queues analyzePhysique', () => {
     const d = testDeps({ now: () => NOW, enqueuePhysique: enqueue });
     d.store.put(photoKey(uid, 's1'));
     d.store.put(cardKey(uid, 's1'));
-    return { uid, result: await h.stampSession(d, uid, { sessionId: 's1' }) };
+    return { uid, result: await h.stampSession(d, uid, {
+      sessionId: 's1', photoSHA256: 'a'.repeat(64), cardFormatVersion: 1, filter: 'iron', proofImageCreated: true,
+    }) };
   }
 
   it('queues only with consent and age, and a queue error does not fail the stamp', async () => {

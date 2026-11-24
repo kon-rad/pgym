@@ -11,7 +11,7 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint . && tsc -p tsconfig.json --noEmit",
     "test": "firebase emulators:exec --only firestore,auth --project pgym-local \"vitest run\"",
-    "test:unit": "vitest run test/streak.test.ts test/s3PhotoStore.test.ts test/exports.test.ts test/openapi.test.ts test/physique.test.ts test/physiqueEval.test.ts test/visionModel.test.ts",
+    "test:unit": "vitest run test/streak.test.ts test/s3PhotoStore.test.ts test/exports.test.ts test/openapi.test.ts test/physique.test.ts test/physiqueEval.test.ts test/visionModel.test.ts test/photoInsight.test.ts",
     "eval": "tsc -p tsconfig.eval.json && node .eval-build/scripts/physique-eval.js",
     "emulators": "npm run build && firebase emulators:start --only firestore,auth,functions --project pgym-local"
   },

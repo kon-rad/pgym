@@ -5,13 +5,11 @@ describe('index', () => {
     process.env.GCLOUD_PROJECT ??= 'pgym-local';
     const mod = await import('../src/index');
     expect(Object.keys(mod).sort()).toEqual([
-      'analyzePhysique',
+      'analyzePhotoInsight',
       'api',
       'createAgentToken',
-      'createUploadUrls',
       'deleteAccount',
       'deleteSession',
-      'getPhotoUrls',
       'revokeAgentToken',
       'rollWeek',
       'stampSession',
