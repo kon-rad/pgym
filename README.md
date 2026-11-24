@@ -1,5 +1,9 @@
 # PGYM
 
+Your gym photos stay on your phone.
+
+Proof photos are captured in-app, normalized and hashed locally. The server issues the timestamp and proof number and stores the SHA-256 binding plus card metadata, never photo or card bytes. Optional AI analysis is off by default; when enabled for an eligible adult, the selected reduced photo is sent once to Google Gemini for transient analysis and is not retained by PGYM. The returned training insight stays local.
+
 Proof of gym. Log a session, take one photo in the gym, get one timestamped proof card to share.
 
 Status: early build. Nothing here is released yet.

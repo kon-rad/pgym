@@ -9,6 +9,12 @@ updated: 2026-11-15
 
 # PGYM privacy policy
 
+**Privacy-first proof update, 25 November 2026:** Your gym photos stay on your phone. PGYM does not retain proof photos or cards on its servers. The server stores structured workout data, its timestamp and proof number, and a SHA-256 hash plus card metadata. A hash binds the record to exact bytes but does not prove what the photo depicts.
+
+Optional AI photo analysis is off by default and limited to eligible adults. When enabled, the selected reduced photo is sent once through PGYM's authenticated, App Check-protected function to Google's Gemini API for transient analysis and is not retained by PGYM. The returned concise training insight stays local and may appear on the locally rendered card. Analysis failure never blocks stamping or sharing. Google processes the transmission under its terms.
+
+The local controls are Keep proof cards on this iPhone, Automatically save proof cards to Photos, and Delete the photo after the card is created. Their defaults are on, off and on. A reinstall, device change or local deletion can make historical cards unavailable; structured workout history continues to sync.
+
 Effective [EFFECTIVE DATE]. PGYM is run by [COMPANY], [ADDRESS]. Questions: [EMAIL].
 
 PGYM is an iPhone app for logging gym sessions. You log your sets, take one photo in the app, and get a card with the date, the time and a proof number. If you choose, an AI model reads the photo and gives you a private score and one training tip. This policy says what PGYM collects, why, where it is stored, who else handles it, how long it stays and how you delete it.
