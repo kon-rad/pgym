@@ -12,6 +12,17 @@ import Foundation
 /// every overlay is placed at its 4:5 coordinate plus `size.yOffset`. Thread-safe; call it off the
 /// main thread.
 enum ProofCardRenderer {
+    enum ShareMode: String, CaseIterable, Identifiable {
+        case workout, workoutAndScores, scores
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .workout: "Workout stats"
+            case .workoutAndScores: "Stats + scores"
+            case .scores: "Scores only"
+            }
+        }
+    }
     enum RenderError: Error, Equatable {
         case photo
         case context
@@ -24,7 +35,7 @@ enum ProofCardRenderer {
     ])
 
     /// - Parameter photo: an upright photo (the camera's orientation already applied).
-    static func render(photo: CGImage, summary: ProofCardSummary, options: ProofCardOptions) throws -> CGImage {
+    static func render(photo: CGImage, summary: ProofCardSummary, options: ProofCardOptions, score: PhysiqueRecord? = nil, shareMode: ShareMode = .workout) throws -> CGImage {
         let size = options.size.pixelSize
         let filtered = try filteredPhoto(photo, filter: options.filter, size: size)
         let width = Int(size.width)
@@ -52,7 +63,10 @@ enum ProofCardRenderer {
         drawScrim(ctx, layout: layout)
         drawWordmark(ctx, layout: layout)
         drawStamp(ctx, layout: layout, stamp: summary.stamp)
-        drawLowerBlock(ctx, layout: layout, summary: summary, stats: options.stats.row)
+        drawLowerBlock(ctx, layout: layout, summary: summary, stats: shareMode == .scores ? [] : options.stats.row)
+        if shareMode != .workout, let score, score.isScored {
+            drawScores(ctx, layout: layout, record: score, shareMode: shareMode)
+        }
 
         guard let image = ctx.makeImage() else { throw RenderError.context }
         return image
@@ -225,6 +239,26 @@ enum ProofCardRenderer {
 
         ctx.setFillColor(Palette.chalk)
         ctx.fill(CGRect(x: 64, y: layout.y(1232), width: width, height: 3))
+    }
+
+    private static func drawScores(_ ctx: CGContext, layout: Layout, record: PhysiqueRecord, shareMode: ShareMode) {
+        let cells: [(String, Int?)] = [
+            ("V TAPER", record.dimensions["shoulderWaist"]),
+            ("WAIST", record.dimensions["waistHeight"]),
+            ("TORSO", record.dimensions["torsoDelt"]),
+            ("SYMMETRY", record.dimensions["symmetryAlignment"]),
+            ("CORE", record.dimensions["torsoCoreDefinition"]),
+            ("QUADS", record.dimensions["quadProportion"]),
+            ("OVERALL", record.score),
+        ]
+        let valueY: CGFloat = shareMode == .scores ? 1180 : 1040
+        let labelY: CGFloat = shareMode == .scores ? 1225 : 1085
+        for (index, cell) in cells.enumerated() {
+            guard let value = cell.1 else { continue }
+            let x = CGFloat(64 + index * 139)
+            draw(ctx, ProofTextRun(text: "\(value)", font: ProofCardFont.mono(30)), at: CGPoint(x: x, y: layout.y(valueY)), color: Palette.chalk)
+            draw(ctx, ProofTextRun(text: cell.0, font: ProofCardFont.mono(12)), at: CGPoint(x: x, y: layout.y(labelY)), color: Palette.chalk)
+        }
     }
 
     /// Draws a run with its baseline at `point` in the y-down context.

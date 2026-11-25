@@ -12,6 +12,7 @@ struct SessionDetailScreen: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(ProofServices.self) private var proofs
+    @Environment(AppServices.self) private var services
     @Environment(AppSession.self) private var account: AppSession?
     @Environment(NetworkMonitor.self) private var network: NetworkMonitor?
     @Query private var matches: [WorkoutSession]
@@ -22,6 +23,10 @@ struct SessionDetailScreen: View {
     @State private var confirmingDelete = false
     @State private var deleting = false
     @State private var deleteFailed = false
+    @State private var showingPaywall = false
+    @State private var showingConsent = false
+    @State private var analyzing = false
+    @State private var analysisError: String?
 
     init(sessionID: String) {
         self.sessionID = sessionID
@@ -84,6 +89,30 @@ struct SessionDetailScreen: View {
                 if let record = session.physique, proofs.consent.isOn {
                     ScoreBlockView(record: record)
                 }
+                if session.status == .stamped {
+                    Button {
+                        if !services.purchases.isPro { showingPaywall = true }
+                        else if !proofs.consent.isOn { showingConsent = true }
+                        else { Task { await analyze(session) } }
+                    } label: {
+                        HStack {
+                            Image(systemName: "sparkles")
+                            Text(session.physique?.isScored == true ? "Regenerate AI analysis and coaching" : "Get AI analysis and coaching")
+                            Spacer()
+                            if !services.purchases.isPro { Text("PRO") }
+                        }
+                        .pgymText(.body, size: 17)
+                        .foregroundStyle(Color.ink)
+                        .padding(Spacing.grid(4))
+                        .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.plate))
+                    }
+                    .disabled(analyzing || !isOnline)
+                    .accessibilityIdentifier("e3.analyze")
+                    if analyzing { ProgressView("Analyzing photo") }
+                    if let analysisError {
+                        Text(analysisError).pgymText(.body, size: 15).foregroundStyle(Color.bone)
+                    }
+                }
 
                 if deleteFailed {
                     ErrorCard(message: ProgressCopy.deleteFailed, identifier: "e3.deleteError") {
@@ -98,11 +127,23 @@ struct SessionDetailScreen: View {
         }
         .safeAreaInset(edge: .bottom) {
             if session.status == .stamped, session.proofNumber != nil {
-                PrimaryButton(ProgressCopy.shareAgain) { share(session) }
-                    .disabled(cardData == nil)
-                    .padding(.horizontal, Spacing.screenMargin)
-                    .padding(.bottom, Spacing.grid(2))
-                    .accessibilityIdentifier("e3.share")
+                Menu {
+                    Button("Workout stats") { share(session, mode: .workout) }
+                    if session.physique?.isScored == true {
+                        Button("Stats + scores") { share(session, mode: .workoutAndScores) }
+                        Button("Scores only") { share(session, mode: .scores) }
+                    }
+                } label: {
+                    Text(ProgressCopy.shareAgain.uppercased())
+                        .pgymText(.labelBold)
+                        .foregroundStyle(Color.ink)
+                        .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
+                        .background(RoundedRectangle(cornerRadius: Radius.button).fill(Color.plate))
+                }
+                .disabled(cardData == nil)
+                .padding(.horizontal, Spacing.screenMargin)
+                .padding(.bottom, Spacing.grid(2))
+                .accessibilityIdentifier("e3.share")
             }
         }
         .toolbar {
@@ -133,6 +174,16 @@ struct SessionDetailScreen: View {
             ProofShareSheet(item: item)
                 .presentationDetents([.medium, .large])
                 .ignoresSafeArea()
+        }
+        .sheet(isPresented: $showingPaywall) { ProPaywallView() }
+        .sheet(isPresented: $showingConsent) {
+            PhysiqueConsentScreen(isAdult: PhysiqueRules.isAdult(birthYear: account?.profile?.birthYear, currentYear: AgePolicy.currentYear()), onTurnOn: {
+                showingConsent = false
+                Task {
+                    await proofs.consent.turnOn()
+                    if let session = matches.first { await analyze(session) }
+                }
+            }, onNotNow: { showingConsent = false })
         }
         .task(id: session.cardKey) { await loadCard(session) }
     }
@@ -218,9 +269,46 @@ struct SessionDetailScreen: View {
 
     // MARK: Actions
 
-    private func share(_ session: WorkoutSession) {
+    private func share(_ session: WorkoutSession, mode: ProofCardRenderer.ShareMode) {
         guard let cardData else { return }
-        shareItem = try? ProofShareItem(cardJPEG: cardData, proofNumber: session.proofNumber)
+        if mode == .workout {
+            shareItem = try? ProofShareItem(cardJPEG: cardData, proofNumber: session.proofNumber)
+            return
+        }
+        guard let photo = proofs.store.loadPhoto(session.id),
+              let record = proofs.store.record(session.id),
+              let receipt = session.stampReceipt,
+              let score = session.physique else {
+            analysisError = "The original photo is needed to make a score card. Your workout card is still available."
+            return
+        }
+        let summary = ProofFeature.stampedSummary(session: session, receipt: receipt, unit: unit)
+        guard let image = try? ProofCardRenderer.render(photo: photo, summary: summary, options: record.options, score: score, shareMode: mode),
+              let jpeg = try? ProofImageIO.cardJPEG(image, size: record.options.size) else {
+            analysisError = "Could not make the score card. Try again."
+            return
+        }
+        shareItem = try? ProofShareItem(cardJPEG: jpeg, proofNumber: session.proofNumber)
+    }
+
+    private func analyze(_ session: WorkoutSession) async {
+        guard services.purchases.isPro else { showingPaywall = true; return }
+        guard proofs.consent.isOn else { showingConsent = true; return }
+        guard let image = proofs.store.loadPhoto(session.id),
+              let jpeg = try? ProofImageIO.analysisJPEG(image) else {
+            analysisError = "The original photo is needed for analysis. This card cannot be used as a substitute."
+            return
+        }
+        analyzing = true
+        analysisError = nil
+        defer { analyzing = false }
+        do {
+            let result = try await proofs.api.analyzePhysiquePhoto(jpeg: jpeg, sessionID: session.id)
+            session.applyPhysique(result)
+            try context.save()
+        } catch {
+            analysisError = "Analysis was unavailable. Your card and previous scores are unchanged. Try again."
+        }
     }
 
     private func delete(_ session: WorkoutSession) async {
@@ -263,21 +351,44 @@ struct SetLine: View {
 /// The stored score for one session (E3), or the refusal in plain words. Never red, never a warning.
 struct ScoreBlockView: View {
     let record: PhysiqueRecord
+    @State private var showingInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(2)) {
             SectionLabel(StampCopy.sectionScore)
+            Button("What do these scores mean?") { showingInfo = true }
+                .pgymText(.body, size: 14)
+                .foregroundStyle(Color.plate)
             if record.isScored, let score = record.score {
                 Text("\(score)")
                     .font(.pgym(.data, size: 24))
                     .foregroundStyle(Color.chalk)
                     .accessibilityLabel("Score \(score) out of 100")
+                ForEach(PhysiqueDimension.allCases) { dimension in
+                    if let value = record.dimensions[dimension.rawValue] {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(dimension.title)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: Spacing.grid(1))
+                            Text("\(value)/100")
+                                .font(.pgym(.data, size: 15))
+                        }
+                        .pgymText(.body, size: 14)
+                        .foregroundStyle(Color.bone)
+                    }
+                }
                 if let tip = record.tip {
                     SectionLabel(StampCopy.sectionTip)
                         .padding(.top, Spacing.grid(2))
                     Text(tip)
                         .pgymText(.body, size: 17)
                         .foregroundStyle(Color.chalk)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let encouragement = record.encouragement {
+                    Text(encouragement)
+                        .pgymText(.body, size: 15)
+                        .foregroundStyle(Color.plate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Text(StampCopy.disclaimer)
@@ -300,5 +411,6 @@ struct ScoreBlockView: View {
         .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Color.iron))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("e3.score")
+        .sheet(isPresented: $showingInfo) { PhysiqueMetricInfoScreen() }
     }
 }

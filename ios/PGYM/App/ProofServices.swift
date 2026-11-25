@@ -71,11 +71,8 @@ final class ProofServices {
         let images = images
         let queue = queue
         queue.beforeStamp = { await consent.flush() }
-        queue.physiqueEnabled = {
-            consent.isOn
-                && (purchases?.canUse(.photoInsight) ?? true)
-                && PhysiqueRules.isAdult(birthYear: account.profile?.birthYear, currentYear: AgePolicy.currentYear())
-        }
+        // Analysis now starts from the stamped workout card, after explicit consent.
+        queue.physiqueEnabled = { false }
         queue.restampCard = { session, receipt in
             let jpeg = try ProofFeature.restampCard(session: session, receipt: receipt, unit: unit(), store: store)
             if let key = session.cardKey { images.store(jpeg, for: key) }

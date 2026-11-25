@@ -17,19 +17,17 @@ enum StampCopy {
 
     // MARK: D10 Physique consent
     static let consentTitle = "Optional photo insight"
-    static let consentLead1 = "One concise, positive training suggestion from this photo. No score or health conclusion."
-    static let consentLead2 = "Your gym photos stay on your phone, except for this optional one-time transmission."
+    static let consentLead1 = "Get seven visual physique scores and short, positive coaching from your workout photo. Scores are estimates, not health conclusions."
+    static let consentLead2 = "Your photo stays on your phone except when you request analysis. Scores and coaching are saved to your account."
     static let consentSentLabel = "What is sent"
     static let consentSentBody = "This session's photo. Nothing else: not your name, email, age or sets."
     static let consentWhoLabel = "Who sees it"
-    static let consentWho1 = "When enabled, the selected reduced photo is sent once to Google's Gemini API for transient analysis."
-    static let consentWho2 = "PGYM does not retain the transmitted photo or the returned insight on its servers. Google processes it under its terms."
-    static let consentWho3 = "The insight stays on this iPhone and can appear on your locally rendered card."
+    static let consentWho1 = "When you request analysis, a reduced photo is sent to Together AI."
+    static let consentWho2 = "PGYM stores the seven scores and coaching with your workout. The analysis photo is not stored on the server."
+    static let consentWho3 = "You choose whether to add scores to a shareable card."
     static let consentWho4 = "Analysis failure never blocks stamping or sharing."
-    // "Google does not use your photo to train its models." is held until card B2 confirms it in the
-    // Gemini API terms (pgym-app-copy.md, D10). It is deliberately not in the build.
     static let consentOffLabel = "How to turn it off"
-    static let consentOffBody = "Profile, then Privacy and data. Turning it off stops future photo transmissions."
+    static let consentOffBody = "Profile, then Privacy and data. Turning it off stops future analysis and removes saved scores."
     static let consentAge = "For people 18 and over."
     static let disclaimer = "An AI estimate from this photo. Not medical advice."
     static let consentTurnOn = "Turn on photo insight"

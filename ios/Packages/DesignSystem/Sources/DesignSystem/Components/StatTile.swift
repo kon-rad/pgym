@@ -17,6 +17,8 @@ public struct StatTile: View {
             Text(label)
                 .pgymText(.label)
                 .foregroundStyle(Color.steel)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             HStack(alignment: .firstTextBaseline, spacing: Spacing.grid(1)) {
                 Text(value)
                     .font(.pgym(.data, size: 24))
@@ -30,7 +32,7 @@ public struct StatTile: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
         .padding(Spacing.grid(4))
         .background(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Color.iron)

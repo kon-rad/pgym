@@ -131,6 +131,10 @@ final class FakeProofAPI: ProofAPI {
         return nextInsight
     }
 
+    func analyzePhysiquePhoto(jpeg: Data, sessionID: String) async throws -> PhysiqueRecord {
+        throw ProofAPIError.unavailable
+    }
+
     private func signedURL(_ key: String, method: String) -> URL {
         urlSerial += 1
         // A new signature every call, like the real presigner, so caches must key on the object key.

@@ -10,6 +10,12 @@ final class HTTPSProofAPI: ProofAPI {
         let proofImageCreated: Bool
     }
     private struct InsightResponse: Decodable { let insight: String }
+    private struct PhysiqueResponse: Decodable {
+        let score: Int
+        let dimensions: [String: Int]
+        let tip: String
+        let encouragement: String
+    }
     private let client: HTTPSClient
 
     init(client: HTTPSClient) { self.client = client }
@@ -36,6 +42,16 @@ final class HTTPSProofAPI: ProofAPI {
         do {
             let result: InsightResponse = try await client.send("POST", path: "/api/photo-insight", body: jpeg, contentType: "image/jpeg")
             return result.insight
+        } catch { throw Self.proofError(error) }
+    }
+
+    func analyzePhysiquePhoto(jpeg: Data, sessionID: String) async throws -> PhysiqueRecord {
+        guard jpeg.count <= 1_500_000, sessionID.range(of: "^[A-Za-z0-9_-]{1,128}$", options: .regularExpression) != nil else {
+            throw ProofAPIError.invalid("A reduced original photo and stamped session are required.")
+        }
+        do {
+            let result: PhysiqueResponse = try await client.send("POST", path: "/api/physique-score?sessionId=\(sessionID)", body: jpeg, contentType: "image/jpeg")
+            return PhysiqueRecord(score: result.score, tip: result.tip, dimensions: result.dimensions, encouragement: result.encouragement)
         } catch { throw Self.proofError(error) }
     }
 
