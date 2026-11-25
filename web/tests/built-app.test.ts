@@ -169,7 +169,7 @@ describe('built app', () => {
       'Is it free?',
       'Which phones does it work on?',
       'What happens to my photos?',
-      'How is the physique score made?',
+      'How does optional AI analysis work?',
       'What counts as a proof?',
       'What if I miss a week?',
       'Does it work without signal?',

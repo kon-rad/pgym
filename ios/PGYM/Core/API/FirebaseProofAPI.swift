@@ -17,21 +17,34 @@ final class FirebaseProofAPI: ProofAPI {
     }
 
     func createUploadUrls(sessionID: String, photoBytes: Int, cardBytes: Int) async throws -> UploadTargets {
-        let data = try await call(API.createUploadUrls, ["sessionId": sessionID, "photoBytes": photoBytes, "cardBytes": cardBytes])
-        guard let targets = UploadTargets(callable: data) else { throw ProofAPIError.invalid(API.createUploadUrls) }
-        return targets
+        throw ProofAPIError.invalid("Remote proof uploads are retired.")
     }
 
     func getPhotoUrls(keys: [String]) async throws -> SignedPhotoLinks {
-        let data = try await call(API.getPhotoUrls, ["keys": keys])
-        guard let links = SignedPhotoLinks(callable: data) else { throw ProofAPIError.invalid(API.getPhotoUrls) }
-        return links
+        throw ProofAPIError.invalid("Remote proof reads are retired.")
     }
 
     func stampSession(sessionID: String) async throws -> StampReceipt {
-        let data = try await call(API.stampSession, ["sessionId": sessionID])
+        throw ProofAPIError.invalid("Proof metadata is required.")
+    }
+
+    func stampSession(sessionID: String, photoSHA256: String, cardFormatVersion: Int, filter: String, proofImageCreated: Bool) async throws -> StampReceipt {
+        let data = try await call(API.stampSession, [
+            "sessionId": sessionID,
+            "photoSHA256": photoSHA256,
+            "cardFormatVersion": cardFormatVersion,
+            "filter": filter,
+            "proofImageCreated": proofImageCreated,
+        ])
         guard let receipt = StampReceipt(callable: data) else { throw ProofAPIError.invalid(API.stampSession) }
         return receipt
+    }
+
+    func analyzePhotoInsight(jpeg: Data) async throws -> String {
+        guard jpeg.count <= 4 * 1024 * 1024 else { throw ProofAPIError.invalid("Reduced photo is too large.") }
+        let data = try await call(API.analyzePhotoInsight, ["consent": true, "imageBase64": jpeg.base64EncodedString()])
+        guard let insight = data["insight"] as? String, !insight.isEmpty else { throw ProofAPIError.invalid(API.analyzePhotoInsight) }
+        return insight
     }
 
     private func call(_ name: String, _ payload: [String: Any]) async throws -> [String: Any] {

@@ -9,6 +9,8 @@ updated: 2026-11-15
 
 # PGYM terms of use
 
+Your gym photos stay on your phone. If an eligible adult enables optional AI analysis, the selected reduced photo is sent once to Google's Gemini API for transient analysis and is not retained by PGYM. The returned training insight is an optional suggestion, not a claim about performance, health, body composition or a medical conclusion.
+
 Effective [EFFECTIVE DATE]. These terms are an agreement between you and [COMPANY], [ADDRESS] ("we"). By creating an account you agree to them and to the Privacy Policy at [DOMAIN]/privacy. If you do not agree, do not use PGYM.
 
 ## 1. What PGYM is

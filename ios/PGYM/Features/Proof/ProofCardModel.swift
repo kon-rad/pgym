@@ -149,6 +149,8 @@ struct ProofCardSummary: Equatable, Sendable {
     /// IANA zone the session started in; the timestamp is shown there.
     var timezone: String
     var stamp: ProofStampState
+    /// Optional transient AI result stored only with the local session/card.
+    var trainingInsight: String? = nil
 }
 
 extension ProofCardSummary {
@@ -178,7 +180,8 @@ extension ProofCardSummary {
             topLift: top,
             unit: unit,
             timezone: session.timezone,
-            stamp: stamp
+            stamp: stamp,
+            trainingInsight: session.physiqueTip
         )
     }
 }

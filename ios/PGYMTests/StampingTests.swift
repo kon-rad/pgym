@@ -141,78 +141,29 @@ final class StampingTests: XCTestCase {
         )
     }
 
-    // MARK: Done-when 1: a failed upload retries and then stamps once
+    // MARK: Done-when 1: proof media stays local and stamping is idempotent
 
-    func testFailedUploadRetriesThenStampsOnce() async throws {
+    func testStampDoesNotUploadProofMedia() async throws {
         let rig = makeRig()
         let session = try endedSession(in: rig.container.mainContext, store: rig.store)
-        // The photo fails twice (a dropped connection at the gym), then goes up.
+        // These failures would fire if the retired upload path were reached.
         rig.uploader.failures = [.unavailable, .unavailable]
 
         rig.queue.requestStamp()
         await rig.queue.waitUntilIdle()
 
-        XCTAssertEqual(rig.uploader.attempts.count, 4, "two failed photo PUTs, then photo and card")
-        XCTAssertEqual(rig.api.stampCalls, [session.id], "stampSession is called exactly once, after both files are up")
+        XCTAssertTrue(rig.uploader.attempts.isEmpty)
+        XCTAssertTrue(rig.api.createCalls.isEmpty)
+        XCTAssertTrue(rig.objects.objects.isEmpty)
+        XCTAssertEqual(rig.api.stampCalls, [session.id])
         XCTAssertEqual(rig.api.newStampCount, 1)
-        XCTAssertTrue(rig.objects.has(API.photoKey(uid: uid, sessionID: session.id)))
-        XCTAssertTrue(rig.objects.has(API.cardKey(uid: uid, sessionID: session.id)))
         XCTAssertEqual(session.status, .stamped)
         XCTAssertEqual(session.proofNumber, 42)
         XCTAssertEqual(session.stampedAt, serverNow)
-        XCTAssertEqual(session.cardKey, "users/u1/sessions/\(session.id)/card.jpg")
+        XCTAssertNil(session.photoKey)
+        XCTAssertNil(session.cardKey)
         XCTAssertEqual(rig.queue.phase(for: session.id), .stamped)
         XCTAssertFalse(session.awaitsStamp)
-    }
-
-    func testUploadThatKeepsFailingIsRetriedByTheQueueAndStillStampsOnce() async throws {
-        let rig = makeRig()
-        let session = try endedSession(in: rig.container.mainContext, store: rig.store)
-        // Three failures use up the engine's tries for the photo; the queue backs off and runs again.
-        rig.uploader.failures = [.unavailable, .unavailable, .unavailable]
-
-        rig.queue.requestStamp()
-        await rig.queue.waitUntilIdle()
-
-        XCTAssertEqual(rig.api.createCalls.count, 2, "a second run after the back-off")
-        XCTAssertEqual(rig.api.stampCalls, [session.id], "no stamp while a file is missing; one stamp after")
-        XCTAssertEqual(session.proofNumber, 42)
-        XCTAssertEqual(session.stampFailures, 0)
-    }
-
-    func testRefusedUploadGivesUpWithoutStampingAndTryAgainStamps() async throws {
-        let rig = makeRig()
-        let session = try endedSession(in: rig.container.mainContext, store: rig.store)
-        rig.uploader.failures = [.uploadRejected(status: 400)]
-
-        rig.queue.requestStamp()
-        await rig.queue.waitUntilIdle()
-        XCTAssertEqual(rig.queue.phase(for: session.id), .failed)
-        XCTAssertTrue(rig.api.stampCalls.isEmpty)
-        XCTAssertNil(session.proofNumber)
-        XCTAssertTrue(session.awaitsStamp, "the session and its files stay on the phone")
-
-        let failed = SessionCompleteModel(modelInputs(session: session, phase: .failed, consentOn: false))
-        XCTAssertEqual(failed.stampArea, .failed)
-        XCTAssertFalse(failed.canShare)
-
-        rig.queue.retry(sessionID: session.id)
-        await rig.queue.waitUntilIdle()
-        XCTAssertEqual(rig.api.stampCalls, [session.id])
-        XCTAssertEqual(session.proofNumber, 42)
-    }
-
-    func testExpiredUploadURLIsRenewedOnce() async throws {
-        let rig = makeRig()
-        let session = try endedSession(in: rig.container.mainContext, store: rig.store)
-        rig.uploader.failures = [.uploadExpired]
-
-        rig.queue.requestStamp()
-        await rig.queue.waitUntilIdle()
-
-        XCTAssertEqual(rig.api.createCalls.count, 2, "one renewal of the presigned URLs")
-        XCTAssertEqual(rig.api.stampCalls.count, 1)
-        XCTAssertEqual(session.status, .stamped)
     }
 
     func testRetryAfterALostStampAnswerGetsTheSameNumber() async throws {
@@ -232,7 +183,8 @@ final class StampingTests: XCTestCase {
 
         XCTAssertEqual(session.proofNumber, 42, "stampSession is idempotent per session")
         XCTAssertEqual(rig.api.newStampCount, 1, "never a second proof number")
-        XCTAssertEqual(rig.uploader.attempts.count, 2, "createUploadUrls says already stamped; nothing is uploaded twice")
+        XCTAssertTrue(rig.uploader.attempts.isEmpty)
+        XCTAssertTrue(rig.api.createCalls.isEmpty)
     }
 
     // MARK: Done-when 2: an offline finish is stamped after reconnect with the server's time

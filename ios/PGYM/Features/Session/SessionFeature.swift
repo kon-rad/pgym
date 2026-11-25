@@ -45,7 +45,7 @@ struct SessionHost: ViewModifier {
                         })
                     } else if let completed = proofs.completedSessionID {
                         SessionCompleteScreen(sessionID: completed) {
-                            proofs.completedSessionID = nil
+                            proofs.finishCompletionFlow(sessionID: completed)
                         }
                         .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     } else {
