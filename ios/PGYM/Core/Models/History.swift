@@ -35,6 +35,7 @@ struct SessionSnapshot: Equatable, Sendable, Identifiable {
     var exercises: [Exercise] = []
     var physiqueScore: Int?
     var physiqueTip: String?
+    var physiqueDimensions: [String: Int] = [:]
     var physiqueRefusedReason: String?
     var cardKey: String?
 
@@ -52,6 +53,7 @@ struct SessionSnapshot: Equatable, Sendable, Identifiable {
         exercises: [Exercise] = [],
         physiqueScore: Int? = nil,
         physiqueTip: String? = nil,
+        physiqueDimensions: [String: Int] = [:],
         physiqueRefusedReason: String? = nil,
         cardKey: String? = nil
     ) {
@@ -68,6 +70,7 @@ struct SessionSnapshot: Equatable, Sendable, Identifiable {
         self.exercises = exercises
         self.physiqueScore = physiqueScore
         self.physiqueTip = physiqueTip
+        self.physiqueDimensions = physiqueDimensions
         self.physiqueRefusedReason = physiqueRefusedReason
         self.cardKey = cardKey
     }
@@ -128,6 +131,7 @@ extension SessionSnapshot {
             },
             physiqueScore: session.physiqueScore,
             physiqueTip: session.physiqueTip,
+            physiqueDimensions: session.physique?.dimensions ?? [:],
             physiqueRefusedReason: session.physiqueRefusedReason,
             cardKey: session.cardKey
         )

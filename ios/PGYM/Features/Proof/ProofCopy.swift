@@ -13,7 +13,7 @@ enum ProofCopy {
     static let saveWithoutProof = "Save without proof"
 
     // MARK: D7 Proof camera
-    static let cameraHint = "One photo. This is the one on your card."
+    static let cameraHint = "For AI coaching, show your full body in even light. If comfortable, wear shorts and a sports bra or shorts without a shirt."
     static let timerOn = "3 s"
     static let timerOff = "Off"
     // pgym-flow-spec.md, "Accessibility": the shutter reads "Take proof photo".

@@ -25,6 +25,7 @@ struct TodayScreen: View {
     @State private var pending: PendingStart?
     @State private var startTick = 0
     @State private var path: [TodayRoute] = []
+    @State private var showingPaywall = false
 
     private enum PendingStart {
         case routine(Routine)
@@ -65,6 +66,7 @@ struct TodayScreen: View {
                         weekSection(model)
                         stateCard(model)
                             .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        aiCoachingCard
                         syncLine
                         if let last = model.lastProof { lastProofRow(last) }
                     }
@@ -80,6 +82,7 @@ struct TodayScreen: View {
             .navigationDestination(for: TodayRoute.self) { route in
                 switch route {
                 case let .session(id): SessionDetailScreen(sessionID: id)
+                case .scores: ScoreHistoryScreen()
                 }
             }
             .sensoryFeedback(.impact(weight: .medium), trigger: startTick)
@@ -88,6 +91,7 @@ struct TodayScreen: View {
                     .presentationDetents([.medium, .large])
                     .presentationBackground(Color.ink)
             }
+            .sheet(isPresented: $showingPaywall) { ProPaywallView() }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("screen.\(Self.viewID)")
         }
@@ -95,6 +99,32 @@ struct TodayScreen: View {
     }
 
     // MARK: Header
+
+    private var aiCoachingCard: some View {
+        Button {
+            if services?.purchases.isPro == true { path.append(.scores) }
+            else { showingPaywall = true }
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.grid(2)) {
+                HStack {
+                    Image(systemName: "sparkles")
+                    Text("AI ANALYSIS + COACHING")
+                    Spacer()
+                    if services?.purchases.isPro != true { Text("PRO") }
+                }
+                .pgymText(.labelBold)
+                Text("Seven photo scores. Personal bests. Coaching for your next session.")
+                    .pgymText(.body, size: 17)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(Color.ink)
+            .padding(Spacing.grid(4))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.plate))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("c1.aiCoaching")
+    }
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -366,6 +396,7 @@ struct TodayScreen: View {
 
 enum TodayRoute: Hashable {
     case session(String)
+    case scores
 }
 
 struct TodayScreen_Previews: PreviewProvider {

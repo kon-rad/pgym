@@ -89,6 +89,8 @@ final class WorkoutSession {
     var physiqueTip: String? = nil
     var physiqueRefusedReason: String? = nil
     var physiqueAnalyzedAt: Date? = nil
+    var physiqueDimensionsData: Data? = nil
+    var physiqueEncouragement: String? = nil
 
     static let defaultRestSeconds = 90
 
@@ -160,7 +162,8 @@ final class WorkoutSession {
     /// The stored score or refusal, as the server wrote it. Nil when there is neither.
     var physique: PhysiqueRecord? {
         guard physiqueScore != nil || physiqueRefusedReason != nil else { return nil }
-        return PhysiqueRecord(score: physiqueScore, tip: physiqueTip, refusedReason: physiqueRefusedReason, analyzedAt: physiqueAnalyzedAt)
+        let dimensions = (physiqueDimensionsData.flatMap { try? JSONDecoder().decode([String: Int].self, from: $0) }) ?? [:]
+        return PhysiqueRecord(score: physiqueScore, tip: physiqueTip, refusedReason: physiqueRefusedReason, analyzedAt: physiqueAnalyzedAt, dimensions: dimensions, encouragement: physiqueEncouragement)
     }
 
     /// Takes the server's `physique` map (or its absence). Not a local change: no sync is queued,
@@ -170,9 +173,11 @@ final class WorkoutSession {
         physiqueTip = record?.isScored == true ? record?.tip : nil
         physiqueRefusedReason = record?.refusedReason
         physiqueAnalyzedAt = record?.analyzedAt
+        physiqueDimensionsData = record.map { try? JSONEncoder().encode($0.dimensions) } ?? nil
+        physiqueEncouragement = record?.encouragement
     }
 
-    var hasPhysique: Bool { physiqueScore != nil || physiqueRefusedReason != nil || physiqueTip != nil }
+    var hasPhysique: Bool { physiqueScore != nil || physiqueRefusedReason != nil || physiqueTip != nil || physiqueDimensionsData != nil }
 }
 
 /// One exercise inside a session, with its sets. Firestore: an element of `sessions/{id}.exercises`.

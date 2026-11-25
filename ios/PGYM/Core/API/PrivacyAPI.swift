@@ -27,7 +27,7 @@ final class HTTPSPrivacyAPI: PrivacyAPI {
     init(client: HTTPSClient) { self.client = client }
 
     func deletePhysiqueScores() async throws {
-        // Insights are transient and are never persisted by the HTTPS service.
+        let _: DeletedScores = try await client.send("DELETE", path: "/api/physique-scores")
     }
 
     func deleteAllPhotos() async throws {
@@ -42,6 +42,7 @@ final class HTTPSPrivacyAPI: PrivacyAPI {
 }
 
 private struct DeleteSessionResponse: Decodable { let sessionId: String; let deleted: Bool }
+private struct DeletedScores: Decodable { let deleted: Int }
 
 /// In memory: records every call. Tests set `failure` to make the next calls throw.
 @MainActor

@@ -264,4 +264,5 @@ protocol ProofAPI: AnyObject {
     ) async throws -> StampReceipt
     /// Optional, transient analysis. Failure must never block stamping.
     func analyzePhotoInsight(jpeg: Data) async throws -> String
+    func analyzePhysiquePhoto(jpeg: Data, sessionID: String) async throws -> PhysiqueRecord
 }

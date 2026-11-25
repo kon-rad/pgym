@@ -137,7 +137,7 @@ struct ProofPreferences {
         }
     }
 
-    /// Local media defaults. Absence is intentional so existing installs receive the privacy-first defaults.
+    /// Local media defaults. Photos stay on the phone for later optional analysis and score-card sharing.
     var keepCardsOnPhone: Bool {
         get { defaults.object(forKey: Key.keepCards) as? Bool ?? true }
         nonmutating set { defaults.set(newValue, forKey: Key.keepCards) }
@@ -149,7 +149,7 @@ struct ProofPreferences {
     }
 
     var deleteOriginalAfterCard: Bool {
-        get { defaults.object(forKey: Key.deleteOriginal) as? Bool ?? true }
+        get { defaults.object(forKey: Key.deleteOriginal) as? Bool ?? false }
         nonmutating set { defaults.set(newValue, forKey: Key.deleteOriginal) }
     }
 }

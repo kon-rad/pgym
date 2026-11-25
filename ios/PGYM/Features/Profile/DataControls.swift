@@ -8,7 +8,7 @@ import SwiftData
 /// Turning analysis off (pgym-architecture.md: "Turning analysis off deletes stored scores"):
 /// 1. the scores leave the phone at once, so no screen shows them again;
 /// 2. `users/{uid}.physiqueConsent` goes false, so the server stops scoring new proofs;
-/// 3. the HTTPS service has nothing to delete because insights are transient and never persisted.
+/// 3. the HTTPS service deletes stored seven-score results from the user's sessions.
 @MainActor
 @Observable
 final class DataControls {
@@ -187,7 +187,9 @@ struct DataExport: Encodable {
 
     struct Physique: Encodable {
         var score: Int?
+        var dimensions: [String: Int]
         var tip: String?
+        var encouragement: String?
         var refusedReason: String?
     }
 
@@ -272,7 +274,7 @@ struct DataExport: Encodable {
                             )
                         },
                         physique: session.hasPhysique
-                            ? Physique(score: session.physiqueScore, tip: session.physiqueTip, refusedReason: session.physiqueRefusedReason)
+                            ? Physique(score: session.physiqueScore, dimensions: session.physique?.dimensions ?? [:], tip: session.physiqueTip, encouragement: session.physiqueEncouragement, refusedReason: session.physiqueRefusedReason)
                             : nil
                     )
                 }

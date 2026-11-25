@@ -30,7 +30,7 @@ enum ProgressCopy {
         return [number, date, time].compactMap { $0 }.joined(separator: " · ")
     }
     static let sets = "Sets"
-    static let totalLifted = "Total lifted"
+    static let totalLifted = "Lifted"
     static let time = "Time"
     static let unstamped = "Saved without proof. Not counted toward the week."
     static let shareAgain = "Share again"
@@ -294,6 +294,7 @@ enum ProgressModel {
         var sessionID: String
         var date: Date
         var score: Int?
+        var dimensions: [String: Int] = [:]
         var tip: String?
         var refusedReason: String?
         var id: String { sessionID }
@@ -308,6 +309,7 @@ enum ProgressModel {
                     sessionID: $0.id,
                     date: $0.stampedAt ?? $0.startedAt,
                     score: $0.hasScore ? $0.physiqueScore : nil,
+                    dimensions: $0.hasScore ? $0.physiqueDimensions : [:],
                     tip: $0.hasScore ? $0.physiqueTip : nil,
                     refusedReason: $0.physiqueRefusedReason
                 )
