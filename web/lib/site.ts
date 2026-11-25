@@ -10,10 +10,10 @@ const appStoreUrl = clean(process.env.NEXT_PUBLIC_APP_STORE_URL)
 export const site = {
   name: 'PGYM',
   line: 'Proof of gym.',
-  /** Meta title and description, from pgym-landing-copy.md ("Meta title", "Meta description"). */
-  title: 'PGYM: Proof of gym for your iPhone',
+  /** Meta title and description for the current landing page. */
+  title: 'PGYM: Log the work. See the change. Share the proof.',
   description:
-    'Log your sets, take one photo, and get a card stamped with the time and your proof number. You pick the days a week. Rest days never break it.',
+    'Track your workouts, stamp a shareable proof photo, and follow optional Pro AI physique scores, coaching and trends over time. Your original gym photos stay on your iPhone.',
   url: clean(process.env.NEXT_PUBLIC_SITE_URL) || 'http://localhost:3000',
   supportEmail: clean(process.env.NEXT_PUBLIC_SUPPORT_EMAIL) || 'synducer@gmail.com',
   ownerXUrl: 'https://x.com/konrad_gnat',

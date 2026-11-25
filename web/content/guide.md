@@ -72,9 +72,9 @@ A session counts when it has at least one logged set and one photo.
    *Screen D7, Proof camera. [Screenshot to add]*
 4. **Make the card.** Pick a filter (Iron, Chalk, Plate or Raw), choose which numbers show on the card, and choose 4:5 for a feed or 9:16 for a story. Retake replaces the photo. Tap Stamp it.
    *Screen D8, Proof card editor. [Screenshot to add]*
-5. **Wait for the stamp.** The photo uploads and the server sets the time and your proof number. Offline, the card is saved with a "pending" stamp and gets its server time when you're back online.
+5. **Wait for the stamp.** The server receives proof metadata, sets the time and your proof number, and the photo stays on your iPhone. Offline, the card is saved with a "pending" stamp and gets its server time when you're back online.
    *Screen D9, Stamping. [Screenshot to add]*
-6. **See what changed.** Your week moves, new bests show, and so does the total weight lifted. If the AI score is on, it appears here a few seconds later.
+6. **See what changed.** Your week moves, new bests show, and so does the total weight lifted. Open the stamped workout's detail page to request optional Pro AI analysis.
    *Screen D11, Session complete. [Screenshot to add]*
 
 Proof numbers count up and are never reused. #042 means the forty-second time you showed up. One session gets one proof.
@@ -85,10 +85,10 @@ Proof numbers count up and are never reused. #042 means the forty-second time yo
    *Screen D11, Session complete. [Screenshot to add]*
 2. **Pick where it goes.** The iOS share sheet opens with the card image. Send it to any app, or Save to Photos.
    *Screen D12, Share. [Screenshot to add]*
-3. **Share an older one.** Open the session from your proof wall and tap Share again.
+3. **Share an older one.** Open the session from your proof wall and tap Share again. Choose Workout stats, Stats + scores or Scores only when scores are available.
    *Screen E3, Session detail. [Screenshot to add]*
 
-The card never shows your AI score or tip. Nothing is shared unless you share it.
+The ordinary card does not show AI scores. Score overlays are optional; coaching stays on the detail page. Nothing is shared unless you choose to share it.
 
 ## 6. Read your progress
 
@@ -105,16 +105,16 @@ How the streak works: hit your weekly number and the week locks. Every 4 weeks y
 
 ## 7. Turn the AI score on or off
 
-The AI physique score is optional and private. It is a 0 to 100 estimate of visible muscular development and symmetry from your session photo, with one training tip. Only you see it. It is never on the card.
+AI analysis is optional, for eligible adults with Pro. It estimates six visible dimensions and a separate overall fitness and muscle score from 0 to 100. It adds three coaching sentences and one encouraging sentence. Results stay private in your history unless you choose a score-sharing card layout.
 
-1. **Turn it on.** Before your first analysis, PGYM shows what is sent and who sees it. Tap Turn on, or Not now. It is off until you say yes, and only available if you are 18 or over.
+1. **Turn it on.** From a stamped workout's detail page, tap Get AI analysis and coaching. If you are not subscribed, PGYM shows the Pro plans. Before the first analysis, PGYM shows what is sent and who sees it. Tap Turn on, or Not now. It is off until you say yes, and only available to eligible adults.
    *Screen D10, Physique consent. [Screenshot to add]*
-2. **See it over time.** Your score history with every tip, and the off switch.
+2. **See it over time.** Open Progress, then Score history. Pick one metric or Overall fitness and muscle from the menu; read each session point, its seven-day average and your personal bests. Tap What do the six scores mean? for descriptions. The workout detail page shows that day's coaching.
    *Screen E5, Score history. [Screenshot to add]*
 3. **Turn it off.** Profile, then Privacy and data, then switch Physique analysis off. Turning it off also deletes your stored scores.
    *Screen F6, Privacy and data. [Screenshot to add]*
 
-Some photos get no score: no person in frame, more than one person, only a face, anyone who looks under 18, or too dark. The session still counts. Every score carries the line "An AI estimate from this photo. Not medical advice."
+Some photos cannot be scored, including partial-body images, more than one person, or poor light. The session still counts. Every score is an AI estimate from a photo, not medical advice. For a repeatable capture routine and guidance on reading the charts, see [Measure the work. See the change.](/blog/measure-the-work-see-the-change).
 
 ## 8. Delete your data
 

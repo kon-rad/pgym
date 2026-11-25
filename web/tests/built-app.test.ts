@@ -145,10 +145,12 @@ describe('built app', () => {
     expect(html).toContain('href="/agents"')
   })
 
-  it('home page carries the final landing copy (pgym-landing-copy.md)', async () => {
+  it('home page carries the proof and AI progress message', async () => {
     const html = (await (await fetch(`${base}/`)).text()).replace(/&#x27;|&#39;/g, "'")
     for (const line of [
-      'Log your sets. Take one photo. Get your proof.',
+      'Log the work. See the change. Share the proof.',
+      'Measure the work. See the change.',
+      'How the photo scores work',
       'iPhone only. Not out yet.',
       'How it works',
       'Every session, numbered.',
@@ -160,7 +162,7 @@ describe('built app', () => {
       'Built in the open.',
       'The code is on GitHub.',
       'Your agent can read your training.',
-      '<title>PGYM: Proof of gym for your iPhone</title>',
+      '<title>PGYM: Log the work. See the change. Share the proof.</title>',
     ]) {
       expect(html, line).toContain(line)
     }
