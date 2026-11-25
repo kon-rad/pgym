@@ -26,7 +26,7 @@ MIT. You can use, copy, change and share the code, including commercially, as lo
 
 ## Run it locally
 
-The whole stack runs on a laptop with no cloud account: the Firebase emulator for sign-in, database and server code, MinIO in place of S3 for photos, and a fake AI client in place of Gemini. The steps are in the [README](https://github.com/kon-rad/pgym#run-it-locally).
+The service builds and tests on a laptop without a cloud account. Tests use fakes for Firebase token verification, Firestore-facing route boundaries and transient vision, so no paid API is called. Production proof photos remain on the phone. The steps are in the [README](https://github.com/kon-rad/pgym#run-it-locally).
 
 ## Contribute
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { openApiDocument } from '../src/api';
-import { CardLink, ExerciseHistory, SessionDetail, SCOPES } from '../src/apiSchemas';
+import { ExerciseHistory, SessionDetail, SCOPES } from '../src/apiSchemas';
 import { generateToken, hashToken, TOKEN_PATTERN } from '../src/agentTokens';
 
 /** Needs no emulator: the document is built from the schemas alone. */
@@ -20,14 +20,13 @@ describe('OpenAPI document', () => {
     expect(validator.version).toBe('3.1');
   });
 
-  it('lists the six endpoints with their scopes and parameters', () => {
+  it('lists structured-data endpoints with their scopes and parameters', () => {
     const expected: Record<string, [string, string, string[]]> = {
       '/v1/me': ['getMe', 'read:profile', []],
       '/v1/stats': ['getStats', 'read:stats', []],
       '/v1/sessions': ['listSessions', 'read:sessions', ['query:from', 'query:to', 'query:cursor']],
       '/v1/sessions/{id}': ['getSession', 'read:sessions', ['path:id']],
       '/v1/exercises/{id}/history': ['getExerciseHistory', 'read:sessions', ['path:id', 'query:from', 'query:to', 'query:cursor']],
-      '/v1/sessions/{id}/card': ['getSessionCard', 'read:photos', ['path:id']],
     };
     for (const [path, [opId, scope, params]] of Object.entries(expected)) {
       const op = doc.paths[path]?.get;
@@ -39,19 +38,14 @@ describe('OpenAPI document', () => {
     expect(Object.keys(doc.paths).sort()).toEqual([...Object.keys(expected), '/v1/openapi.json'].sort());
   });
 
-  it('describes physique as optional and private', () => {
+  it('does not describe a photo or physique response', () => {
     const session = doc.components.schemas.SessionDetail as { required: string[]; properties: Record<string, unknown> };
-    expect(session.properties.physique).toBeDefined();
-    expect(session.required).not.toContain('physique');
+    expect(session.properties.physique).toBeUndefined();
+    expect(doc.paths['/v1/sessions/{id}/card']).toBeUndefined();
   });
 });
 
 describe('response schemas', () => {
-  it('drop fields they do not name', () => {
-    const out = CardLink.parse({ url: 'https://s3.test/k', expiresAt: '2026-11-18T18:10:00.000Z', key: 'users/x/sessions/y/card.jpg' });
-    expect(out).toEqual({ url: 'https://s3.test/k', expiresAt: '2026-11-18T18:10:00.000Z' });
-  });
-
   it('accept the timestamps Date.toISOString makes', () => {
     const r = ExerciseHistory.safeParse({
       exerciseId: 'bench-press',
@@ -65,7 +59,7 @@ describe('response schemas', () => {
     expect(r.success).toBe(true);
   });
 
-  it('keep physique only when given', () => {
+  it('drops legacy physique when given', () => {
     const base = {
       id: 's1',
       status: 'stamped',
@@ -84,7 +78,7 @@ describe('response schemas', () => {
       newBests: [],
     };
     expect(SessionDetail.parse(base)).not.toHaveProperty('physique');
-    expect(SessionDetail.parse({ ...base, physique: { score: 50 } }).physique).toEqual({ score: 50 });
+    expect(SessionDetail.parse({ ...base, physique: { score: 50 } })).not.toHaveProperty('physique');
   });
 });
 
@@ -93,6 +87,6 @@ describe('token format', () => {
     const t = generateToken();
     expect(t).toMatch(TOKEN_PATTERN);
     expect(hashToken(t)).toMatch(/^[0-9a-f]{64}$/);
-    expect(SCOPES).toEqual(['read:profile', 'read:sessions', 'read:stats', 'read:photos']);
+    expect(SCOPES).toEqual(['read:profile', 'read:sessions', 'read:stats']);
   });
 });

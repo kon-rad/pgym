@@ -55,11 +55,11 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'What happens to my photos?',
-    a: 'They are stored privately and only you can open them, plus any agent you give photo access. Nothing is shared until you share a card. You can delete one session, every photo, or your whole account from inside the app, and deleting your account removes all of it.',
+    a: 'Your gym photos stay on your phone. Cards are rendered and kept locally only when you choose. A reinstall, device change or local deletion can make old cards unavailable, while workout history keeps syncing.',
   },
   {
-    q: 'How is the physique score made?',
-    a: "It is optional and off until you turn it on. When it is on, the session photo is sent to Google's Gemini model, which returns a 0 to 100 estimate of visible muscle development and symmetry, plus one training tip. Only you see it, it is compared only with your own earlier scores, and it never goes on the card. It is an AI estimate from one photo, not medical advice, and it is not available under 18. Turn it off any time and every stored score is deleted.",
+    q: 'How does optional AI analysis work?',
+    a: "It is off by default and available only to eligible adults. When enabled, the selected reduced photo is sent once to Google's Gemini API for transient analysis and is not retained by PGYM. One positive training insight returns to your phone. Failure never blocks your proof.",
   },
   {
     q: 'What counts as a proof?',
@@ -105,6 +105,7 @@ export default function Home() {
               gym<span className="dot">.</span>
             </h1>
             <p className="lead">Log your sets. Take one photo. Get your proof.</p>
+            <p className="lead">Your gym photos stay on your phone.</p>
             <p className="hero-body">
               Every session ends in one card: your photo, the date and time, and a proof number set by our server. Rest
               days never break the streak.

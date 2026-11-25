@@ -1,5 +1,11 @@
 # PGYM TestFlight checklist
 
+## Privacy-first proof release note
+
+Your gym photos stay on your phone.
+
+The production proof flow uploads no photo or card. Optional adult AI analysis sends the selected reduced photo once to Google Gemini for transient analysis and PGYM does not retain it. On a real device, verify all three local retention settings, add-only Photos permission, original cleanup, unavailable historical-card state, and analysis success plus non-blocking failure.
+
 What the iOS app needs before its first TestFlight build and App Review, as of card I9 (2026-11-15).
 Part 1 maps every App Review guideline quoted in the PGYM market and policy research note (fetched from
 https://developer.apple.com/app-store/review/guidelines/ on 2026-11-15) to where the app meets it. Part 2

@@ -401,6 +401,24 @@ final class ProofCardTests: XCTestCase {
         XCTAssertTrue(ProofPreferences(defaults: defaults).usesBackCamera)
     }
 
+    func testPrivacyFirstMediaPreferenceDefaultsAndPersistence() throws {
+        let suite = "proof-privacy-tests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let preferences = ProofPreferences(defaults: defaults)
+        XCTAssertTrue(preferences.keepCardsOnPhone)
+        XCTAssertFalse(preferences.automaticallySaveCardsToPhotos)
+        XCTAssertTrue(preferences.deleteOriginalAfterCard)
+
+        preferences.keepCardsOnPhone = false
+        preferences.automaticallySaveCardsToPhotos = true
+        preferences.deleteOriginalAfterCard = false
+        let reloaded = ProofPreferences(defaults: defaults)
+        XCTAssertFalse(reloaded.keepCardsOnPhone)
+        XCTAssertTrue(reloaded.automaticallySaveCardsToPhotos)
+        XCTAssertFalse(reloaded.deleteOriginalAfterCard)
+    }
+
     func testShareItemIsANamedJPEGFile() throws {
         XCTAssertEqual(ProofShareItem.fileName(proofNumber: 42), "pgym-proof-042.jpg")
         XCTAssertEqual(ProofShareItem.fileName(proofNumber: nil), "pgym-proof.jpg")

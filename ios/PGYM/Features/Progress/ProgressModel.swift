@@ -43,6 +43,7 @@ enum ProgressCopy {
     static let delete = "Delete"
     static let cancel = "Cancel"
     static let cardFailed = "Could not load the card."
+    static let cardUnavailable = "This card is not on this iPhone. Cards do not return after reinstall, device change or local deletion. Your workout history is still here."
     static let retry = "Retry"
     static let deleteFailed = "That did not delete. Check your connection and try again."
     static let needsConnection = "Needs a connection."

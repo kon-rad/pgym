@@ -169,7 +169,7 @@ describe('built app', () => {
       'Is it free?',
       'Which phones does it work on?',
       'What happens to my photos?',
-      'How is the physique score made?',
+      'How does optional AI analysis work?',
       'What counts as a proof?',
       'What if I miss a week?',
       'Does it work without signal?',
@@ -187,9 +187,9 @@ describe('built app', () => {
 
   it('/privacy sets the photo and AI section apart and lists its contents', async () => {
     const html = await (await fetch(`${base}/privacy`)).text()
-    expect(html).toContain('<section id="the-physique-score-and-google-s-gemini" class="doc-box"')
+    expect(html).toContain('<section id="photos-and-optional-ai-insight"')
     expect(html).toContain('<nav class="doc-toc" aria-label="Contents">')
-    expect(html).toContain('Last updated 2026-11-15')
+    expect(html).toContain('Last updated 2026-11-25')
   })
 
   it('/support carries the support copy', async () => {

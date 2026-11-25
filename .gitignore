@@ -15,6 +15,8 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 GoogleService-Info.plist
+ios/PGYM/GoogleService-Info.plist
+ios/Config/GoogleService-Info.plist
 *service-account*.json
 # Xcode
 DerivedData/
@@ -26,6 +28,7 @@ xcuserdata/
 ios/Config/Local.xcconfig
 *.p12
 *.p8
+ios/Config/*.p8
 .build/
 .swiftpm/
 # Local S3 stand-in

@@ -10,7 +10,7 @@ import { z } from 'zod';
 // Scopes and token management (callables)
 // ---------------------------------------------------------------------------
 
-export const SCOPES = ['read:profile', 'read:sessions', 'read:stats', 'read:photos'] as const;
+export const SCOPES = ['read:profile', 'read:sessions', 'read:stats'] as const;
 export const Scope = z.enum(SCOPES);
 export type Scope = z.infer<typeof Scope>;
 
@@ -136,15 +136,6 @@ export const LoggedSet = z.object({
   rpe: z.number().nullable(),
 });
 
-export const Physique = z
-  .object({
-    score: z.number().min(0).max(100).optional(),
-    tip: z.string().optional(),
-    analyzedAt: Instant.optional(),
-    refusedReason: z.string().optional(),
-  })
-  .meta({ description: 'Private. Present only with `read:photos` and when the owner turned the score on.' });
-
 export const SessionDetail = z.object({
   id: Id,
   status: SessionStatus,
@@ -167,8 +158,10 @@ export const SessionDetail = z.object({
   setCount: z.number().int(),
   totalVolumeKg: Kg,
   newBests: z.array(z.string()),
-  physique: Physique.optional(),
 });
+
+/** @deprecated Legacy schema retained for prelaunch fixture decoding. No route exposes it. */
+export const CardLink = z.object({ url: z.url(), expiresAt: Instant });
 
 export const ExerciseHistory = z.object({
   exerciseId: Id,
@@ -188,11 +181,6 @@ export const ExerciseHistory = z.object({
     .max(PAGE_SIZE)
     .meta({ description: 'Newest first. A page can hold fewer than 50 items while `nextCursor` is not null.' }),
   nextCursor: Cursor,
-});
-
-export const CardLink = z.object({
-  url: z.url(),
-  expiresAt: Instant,
 });
 
 // ---------------------------------------------------------------------------
@@ -245,7 +233,7 @@ export const ROUTES = [
     operationId: 'getSession',
     path: '/v1/sessions/{id}',
     summary: 'One session with every set',
-    description: 'The physique score and tip are included only when the token has `read:photos` and the owner turned the score on.',
+    description: 'Structured workout data only. Local proof media and local AI insight are never exposed.',
     scope: 'read:sessions',
     params: IdParams,
     response: SessionDetail,
@@ -261,16 +249,6 @@ export const ROUTES = [
     query: RangeQuery,
     response: ExerciseHistory,
     responseName: 'ExerciseHistory',
-  },
-  {
-    operationId: 'getSessionCard',
-    path: '/v1/sessions/{id}/card',
-    summary: 'A signed link to the card image',
-    description: `Valid ${CARD_LINK_SEC / 60} minutes. Stamped sessions only.`,
-    scope: 'read:photos',
-    params: IdParams,
-    response: CardLink,
-    responseName: 'CardLink',
   },
 ] as const satisfies readonly Route[];
 

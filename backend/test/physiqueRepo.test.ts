@@ -107,7 +107,7 @@ describe('analyzePhysique on Firestore', () => {
   });
 });
 
-describe('stampSession queues analyzePhysique', () => {
+describe('privacy-first stampSession', () => {
   async function stampWith(fields: Record<string, unknown>, enqueue: (uid: string, s: string) => Promise<void>) {
     const uid = newUid('q');
     await adminDb().doc(`users/${uid}`).set({ timezone: 'UTC', goalPerWeek: 3, birthYear: 1990, ...fields });
@@ -120,20 +120,18 @@ describe('stampSession queues analyzePhysique', () => {
     const d = testDeps({ now: () => NOW, enqueuePhysique: enqueue });
     d.store.put(photoKey(uid, 's1'));
     d.store.put(cardKey(uid, 's1'));
-    return { uid, result: await h.stampSession(d, uid, { sessionId: 's1' }) };
+    return { uid, result: await h.stampSession(d, uid, {
+      sessionId: 's1', photoSHA256: 'a'.repeat(64), cardFormatVersion: 1, filter: 'iron', proofImageCreated: true,
+    }) };
   }
 
-  it('queues only with consent and age, and a queue error does not fail the stamp', async () => {
+  it('never queues the retired server-side physique analysis', async () => {
     const queued: string[] = [];
     const record = async (uid: string) => void queued.push(uid);
-    const yes = await stampWith({ physiqueConsent: true }, record);
+    const stamped = await stampWith({ physiqueConsent: true }, record);
     await stampWith({ physiqueConsent: false }, record);
     await stampWith({ physiqueConsent: true, birthYear: 2010 }, record);
-    expect(queued).toEqual([yes.uid]);
-
-    const broken = await stampWith({ physiqueConsent: true }, async () => {
-      throw new Error('queue down');
-    });
-    expect(broken.result.proofNumber).toBe(1);
+    expect(queued).toEqual([]);
+    expect(stamped.result.proofNumber).toBe(1);
   });
 });

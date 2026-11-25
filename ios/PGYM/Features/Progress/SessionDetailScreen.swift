@@ -161,6 +161,12 @@ struct SessionDetailScreen: View {
                         .transition(.opacity)
                 } else if snapshot.isPending {
                     Stamp(proofNumber: nil, line: ProgressCopy.pending)
+                } else {
+                    Text(ProgressCopy.cardUnavailable)
+                        .pgymText(.body, size: 15)
+                        .foregroundStyle(Color.bone)
+                        .multilineTextAlignment(.center)
+                        .padding(Spacing.grid(5))
                 }
             }
             .aspectRatio(4.0 / 5.0, contentMode: .fit)
@@ -183,13 +189,7 @@ struct SessionDetailScreen: View {
             cardData = local
             return
         }
-        guard let key = session.cardKey else { return }
-        do {
-            let data = try await proofs.images.data(for: key)
-            withAnimation(.easeOut(duration: 0.2)) { cardData = data }
-        } catch {
-            cardFailed = true
-        }
+        // Cards are local-only. A missing card is an expected unavailable state, never a network fetch.
     }
 
     // MARK: Sets

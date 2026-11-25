@@ -19,12 +19,14 @@ struct SettingsScreen: View {
     @State private var signingOut = false
     @State private var verificationSent = false
     @State private var changedTick = 0
+    @State private var proofPreferences = ProofPreferences()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.grid(6)) {
                 ScreenTitle(text: ProfileCopy.settings, size: 44)
                 unitsSection
+                proofStorageSection
                 notificationsSection
                 accountSection
             }
@@ -89,6 +91,27 @@ struct SettingsScreen: View {
     }
 
     // MARK: Notifications
+
+    private var proofStorageSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.grid(3)) {
+            SectionLabel(ProfileCopy.proofStorage)
+            VStack(spacing: 0) {
+                toggleRow(ProfileCopy.keepProofCards, isOn: proofPreferences.keepCardsOnPhone, id: "f5.keepCards") {
+                    proofPreferences.keepCardsOnPhone = $0
+                }
+                Rectangle().fill(Color.hairline).frame(height: Stroke.hairline)
+                toggleRow(ProfileCopy.autoSaveProofCards, isOn: proofPreferences.automaticallySaveCardsToPhotos, id: "f5.autoSaveCards") {
+                    proofPreferences.automaticallySaveCardsToPhotos = $0
+                }
+                Rectangle().fill(Color.hairline).frame(height: Stroke.hairline)
+                toggleRow(ProfileCopy.deleteOriginalPhoto, isOn: proofPreferences.deleteOriginalAfterCard, id: "f5.deleteOriginal") {
+                    proofPreferences.deleteOriginalAfterCard = $0
+                }
+            }
+            .padding(.horizontal, Spacing.grid(4))
+            .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Color.iron))
+        }
+    }
 
     private var notificationsSection: some View {
         let reminders = services.reminders

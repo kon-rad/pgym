@@ -2,7 +2,7 @@ rules_version = '2';
 
 // PGYM Firestore rules. Data model: pgym-architecture.md, "Data model".
 // A user reads and writes only their own documents. Fields the server owns
-// (timestamps, proof numbers, streak numbers, the physique score) are written
+// (timestamps, proof numbers, streak numbers and proof metadata) are written
 // only by Cloud Functions, which use the Admin SDK and bypass these rules.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -18,7 +18,19 @@ service cloud.firestore {
 
     // users/{uid}/sessions/{id} fields only the server writes.
     function serverSessionFields() {
-      return ['proofNumber', 'stampedAt', 'physique', 'photoKey', 'cardKey', 'newBests'];
+      return [
+        'proofNumber',
+        'stampedAt',
+        'newBests',
+        'photoSHA256',
+        'cardFormatVersion',
+        'cardFilter',
+        'proofImageCreated',
+        // Legacy prelaunch fields remain protected while old records exist.
+        'physique',
+        'photoKey',
+        'cardKey'
+      ];
     }
 
     function writesAny(fields) {
@@ -48,7 +60,7 @@ service cloud.firestore {
       allow create, update: if isOwner(uid)
         && !writesAny(serverUserFields())
         && validUser(request.resource.data);
-      // Account deletion goes through deleteAccount, which also removes photos.
+      // Account deletion goes through deleteAccount.
       allow delete: if false;
 
       match /routines/{routineId} {
@@ -65,7 +77,7 @@ service cloud.firestore {
           && resource.data.get('status', 'draft') != 'stamped'
           && !writesAny(serverSessionFields())
           && clientSessionStatus(request.resource.data);
-        // Deletion goes through deleteSession, which also removes the S3 objects.
+        // Deletion goes through deleteSession so server-owned counts are recomputed.
         allow delete: if false;
       }
 

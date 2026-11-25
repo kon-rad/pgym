@@ -75,6 +75,10 @@ struct ProofStore {
         try? fileManager.removeItem(at: recordURL(sessionID))
     }
 
+    func removeOriginal(_ sessionID: String) {
+        try? fileManager.removeItem(at: photoURL(sessionID))
+    }
+
     /// Removes everything for a session (discarded, or deleted with the account).
     func remove(_ sessionID: String) {
         try? fileManager.removeItem(at: folder(sessionID))
@@ -106,6 +110,9 @@ struct ProofPreferences {
         static let backCamera = "pgym.proof.backCamera"
         static let timer = "pgym.proof.timer"
         static let options = "pgym.proof.cardOptions"
+        static let keepCards = "pgym.proof.keepCards"
+        static let autoSavePhotos = "pgym.proof.autoSavePhotos"
+        static let deleteOriginal = "pgym.proof.deleteOriginal"
     }
 
     var usesBackCamera: Bool {
@@ -128,5 +135,21 @@ struct ProofPreferences {
         nonmutating set {
             defaults.set(try? JSONEncoder().encode(newValue), forKey: Key.options)
         }
+    }
+
+    /// Local media defaults. Absence is intentional so existing installs receive the privacy-first defaults.
+    var keepCardsOnPhone: Bool {
+        get { defaults.object(forKey: Key.keepCards) as? Bool ?? true }
+        nonmutating set { defaults.set(newValue, forKey: Key.keepCards) }
+    }
+
+    var automaticallySaveCardsToPhotos: Bool {
+        get { defaults.object(forKey: Key.autoSavePhotos) as? Bool ?? false }
+        nonmutating set { defaults.set(newValue, forKey: Key.autoSavePhotos) }
+    }
+
+    var deleteOriginalAfterCard: Bool {
+        get { defaults.object(forKey: Key.deleteOriginal) as? Bool ?? true }
+        nonmutating set { defaults.set(newValue, forKey: Key.deleteOriginal) }
     }
 }

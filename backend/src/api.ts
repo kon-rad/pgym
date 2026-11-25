@@ -19,7 +19,6 @@ import type { z } from 'zod';
 import { hashToken, TOKEN_PATTERN } from './agentTokens';
 import {
   buildOpenApi,
-  CARD_LINK_SEC,
   PAGE_SIZE,
   RATE_LIMIT_PER_MINUTE,
   ROUTES,
@@ -30,7 +29,6 @@ import {
   type Scope,
 } from './apiSchemas';
 import { readStreakState, toDate, userTimeZone, type Deps } from './handlers';
-import { isOwnKey } from './photoStore';
 import { sanitizeExercises, sessionTotals, type LoggedSet } from './sessionStats';
 import { clampGoal, dayBounds, weekKey } from './streak';
 
@@ -368,17 +366,6 @@ async function getSession(deps: Deps, caller: Caller, params: Record<string, str
     ...totalsOf(s),
     newBests: Array.isArray(s.newBests) ? s.newBests.filter((x: unknown) => typeof x === 'string') : [],
   };
-  // The score is private: it needs read:photos AND the owner's consent being on now.
-  if (caller.scopes.has('read:photos') && s.physique && typeof s.physique === 'object') {
-    const u = (await deps.db.doc(`users/${caller.uid}`).get()).data();
-    if (u?.physiqueConsent === true) {
-      const p = s.physique;
-      out.physique =
-        typeof p.score === 'number'
-          ? { score: Math.min(100, Math.max(0, p.score)), ...(typeof p.tip === 'string' ? { tip: p.tip } : {}), ...(iso(p.analyzedAt) ? { analyzedAt: iso(p.analyzedAt) } : {}) }
-          : { refusedReason: str(p.refusedReason) ?? 'unavailable' };
-    }
-  }
   return out;
 }
 
@@ -434,20 +421,12 @@ async function getExerciseHistory(deps: Deps, caller: Caller, params: Record<str
   };
 }
 
-async function getSessionCard(deps: Deps, caller: Caller, params: Record<string, string>) {
-  const s = await readableSession(deps, caller.uid, params.id);
-  if (s.status !== 'stamped' || !isOwnKey(caller.uid, s.cardKey)) throw notFound('card');
-  const url = await deps.store.presignGet(s.cardKey, CARD_LINK_SEC);
-  return { url, expiresAt: new Date(deps.now().getTime() + CARD_LINK_SEC * 1000).toISOString() };
-}
-
 const HANDLERS: Record<RouteId, Handler> = {
   getMe,
   getStats,
   listSessions,
   getSession,
   getExerciseHistory,
-  getSessionCard,
 };
 
 // ---------------------------------------------------------------------------
