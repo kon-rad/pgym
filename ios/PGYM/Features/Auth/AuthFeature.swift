@@ -10,7 +10,7 @@
 /// | F7 | Delete account | `DeleteAccountScreen` (in Features/Profile) |
 ///
 /// State and routing: `AppSession`. Services: Core/Auth (`AuthService`, `UserRepository`,
-/// `AccountFunctions`, with Firebase and fake implementations).
+/// `AccountFunctions`, with HTTPS and fake implementations).
 enum AuthFeature {
     static let viewIDs = ["A1", "A2", "A3", "A4", "A5", "F7"]
 }

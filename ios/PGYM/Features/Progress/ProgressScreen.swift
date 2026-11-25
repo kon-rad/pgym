@@ -26,6 +26,7 @@ struct ProgressScreen: View {
     @State private var path: [ProgressRoute] = []
     @State private var phase: LoadPhase = .loading
     @State private var appeared = false
+    @State private var showingPaywall = false
 
     enum LoadPhase: Equatable {
         case loading, loaded, failed
@@ -70,6 +71,7 @@ struct ProgressScreen: View {
             .accessibilityIdentifier("screen.\(Self.viewID)")
         }
         .tint(Color.chalk)
+        .sheet(isPresented: $showingPaywall) { ProPaywallView() }
     }
 
     @ViewBuilder
@@ -89,7 +91,15 @@ struct ProgressScreen: View {
                 .accessibilityIdentifier("e1.empty")
         }
 
-        chartSection(snapshots)
+        if services?.purchases.canUse(.advancedProgress) ?? true {
+            chartSection(snapshots)
+        } else {
+            Button { showingPaywall = true } label: {
+                LinkRow(title: "Unlock advanced progress", caption: "Twelve-week trends and your full proof history", detail: "PRO")
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("e1.pro")
+        }
 
         if !proofsOnly.isEmpty {
             wallPreview(Array(proofsOnly.sorted { $0.startedAt > $1.startedAt }.prefix(6)))
@@ -191,12 +201,16 @@ struct ProgressScreen: View {
             HStack {
                 SectionLabel(ProgressCopy.proofWall)
                 Spacer()
-                NavigationLink(value: ProgressRoute.wall) {
+                Button {
+                    if services?.purchases.canUse(.fullHistory) ?? true { path.append(.wall) }
+                    else { showingPaywall = true }
+                } label: {
                     Text(ProgressCopy.seeAll)
                         .font(.pgym(.bodyMedium, size: 15))
                         .foregroundStyle(Color.chalk)
                         .frame(minHeight: Spacing.touchTargetMin)
                 }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("e1.seeAll")
             }
             ProofGrid(sessions: latest)

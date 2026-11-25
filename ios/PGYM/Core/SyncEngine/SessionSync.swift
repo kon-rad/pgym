@@ -119,7 +119,7 @@ protocol SessionRemote: AnyObject {
     /// Writes the whole client part of the document under its own ID. Writing the same document again
     /// replaces it; it can never make a second session.
     func upsert(_ document: SessionDocument, uid: String) async throws
-    /// Removes a session the user discarded after it had synced (callable `deleteSession`).
+    /// Removes a session the user discarded after it had synced (authenticated HTTPS deletion).
     func delete(sessionID: String, uid: String) async throws
     func fetchExerciseStats(uid: String) async throws -> [RemoteExerciseStat]
 }

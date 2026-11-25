@@ -8,17 +8,22 @@ import Observation
 final class AppServices {
     let reminders: ReminderScheduler
     let onboardingDrafts: OnboardingDraftStore
+    let purchases: PurchaseState
 
-    init(reminders: ReminderScheduler, onboardingDrafts: OnboardingDraftStore) {
+    init(reminders: ReminderScheduler, onboardingDrafts: OnboardingDraftStore, purchases: PurchaseState) {
         self.reminders = reminders
         self.onboardingDrafts = onboardingDrafts
+        self.purchases = purchases
     }
 
     /// The real phone: iOS notifications and UserDefaults.
     static func live() -> AppServices {
         AppServices(
             reminders: ReminderScheduler(center: SystemNotificationCenter(), store: UserDefaultsReminderStore()),
-            onboardingDrafts: UserDefaultsOnboardingDraftStore()
+            onboardingDrafts: UserDefaultsOnboardingDraftStore(),
+            purchases: PurchaseState(service: RevenueCatPurchaseService(
+                apiKey: Bundle.main.object(forInfoDictionaryKey: "REVENUECAT_API_KEY") as? String ?? ""
+            ))
         )
     }
 
@@ -26,7 +31,8 @@ final class AppServices {
     static func inMemory() -> AppServices {
         AppServices(
             reminders: ReminderScheduler(center: FakeNotificationCenter(), store: InMemoryReminderStore()),
-            onboardingDrafts: InMemoryOnboardingDraftStore()
+            onboardingDrafts: InMemoryOnboardingDraftStore(),
+            purchases: PurchaseState(service: FakePurchaseService())
         )
     }
 }

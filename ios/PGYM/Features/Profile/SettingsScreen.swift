@@ -20,11 +20,13 @@ struct SettingsScreen: View {
     @State private var verificationSent = false
     @State private var changedTick = 0
     @State private var proofPreferences = ProofPreferences()
+    @State private var showingPaywall = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.grid(6)) {
                 ScreenTitle(text: ProfileCopy.settings, size: 44)
+                proSection
                 unitsSection
                 proofStorageSection
                 notificationsSection
@@ -50,9 +52,37 @@ struct SettingsScreen: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.\(Self.viewID)")
+        .sheet(isPresented: $showingPaywall) { ProPaywallView() }
     }
 
     // MARK: Units
+
+    private var proSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.grid(3)) {
+            SectionLabel("PGYM Pro")
+            Button {
+                if services.purchases.isPro {
+                    Task { if let url = await services.purchases.service.managementURL() { openURL(url) } }
+                } else { showingPaywall = true }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(services.purchases.isPro ? "Pro active" : "Unlock PGYM Pro")
+                            .pgymText(.title, size: 21).foregroundStyle(Color.chalk)
+                        Text(services.purchases.isPro ? "Manage your subscription" : "AI insight, full history and agent access")
+                            .pgymText(.body, size: 14).foregroundStyle(Color.bone)
+                    }
+                    Spacer()
+                    Image(systemName: services.purchases.isPro ? "checkmark.seal.fill" : "arrow.up.right.circle.fill")
+                        .font(.system(size: 28)).foregroundStyle(Color.plate).accessibilityHidden(true)
+                }
+                .padding(Spacing.grid(4))
+                .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.iron))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("f5.pro")
+        }
+    }
 
     private var unitsSection: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(3)) {
