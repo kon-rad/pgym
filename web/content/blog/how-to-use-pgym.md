@@ -8,7 +8,7 @@ date: "2026-11-25"
 
 # How to use PGYM: from your first set to your proof card
 
-PGYM turns a gym session into a record you can keep. Log the work, take one photo in the app, and finish with a proof card stamped with a server time and your next proof number. Here is the first session, step by step.
+PGYM turns a gym session into a record you can keep. Log the work, take one photo in the app, and finish with a proof card bound to a server time and your next proof number. The photo and rendered card stay on your iPhone. Here is the first session, step by step.
 
 ## Choose a goal you can keep
 
@@ -24,7 +24,7 @@ Start a session, enter the weight and reps, and tap the check when a set is done
 
 ## Take the proof
 
-After at least one set, tap **Finish and take proof**. Take a photo with the camera inside PGYM. The app does not import a photo from your camera roll. Choose one of the Iron, Chalk, Plate, or Raw card looks, then stamp it. When the photo reaches the server, the card gets its time and proof number. If you finish offline, the stamp waits until you reconnect.
+After at least one set, tap **Finish and take proof**. Take a photo with the camera inside PGYM. The app does not import a photo from your camera roll. Choose one of the Iron, Chalk, Plate, or Raw card looks, then stamp it. The app sends structured workout data and a SHA-256 binding, not the photo or rendered card, to receive the server time and proof number. If you finish offline, the stamp waits until you reconnect.
 
 You can keep the card private or share it. A retake replaces the photo on that session; it does not create a second proof.
 
@@ -34,6 +34,6 @@ Progress gathers your cards in a proof wall and shows your last twelve weeks aga
 
 ## Your photos and data stay yours
 
-Photos are private until you share a card. An optional physique score is off by default, available only for adults, and stays off the shared card. You can delete a session, photos, or your account in the app. If you want your own AI agent to read training data, you can give it a read-only token with the access you choose.
+Your gym photos stay on the phone. Optional photo insight is off by default and available only to adults. When enabled, one reduced photo is processed transiently to return a short, non-medical workout insight; PGYM does not store the photo or insight on its server. You can delete a session, local cards, or your account in the app. If you want your own AI agent to read training data, you can give it a scoped read-only token. Agents cannot access photos, cards, or local insights.
 
 Ready for the details? Read the [full guide](/guide), or [contact Konrad](/contact) if something is unclear.
