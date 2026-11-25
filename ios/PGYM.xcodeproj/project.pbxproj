@@ -11,9 +11,9 @@
 		AA0000000000000000000061 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000051 /* FirebaseCore */; };
 		AA0000000000000000000062 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000052 /* FirebaseAuth */; };
 		AA0000000000000000000063 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000053 /* FirebaseFirestore */; };
-		AA0000000000000000000064 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000054 /* FirebaseFunctions */; };
-		AA0000000000000000000065 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000055 /* FirebaseAppCheck */; };
 		AA0000000000000000000066 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000056 /* GoogleSignIn */; };
+		AA0000000000000000000067 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000057 /* RevenueCat */; };
+		AA0000000000000000000068 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000058 /* RevenueCatUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,9 +69,9 @@
 				AA0000000000000000000061 /* FirebaseCore in Frameworks */,
 				AA0000000000000000000062 /* FirebaseAuth in Frameworks */,
 				AA0000000000000000000063 /* FirebaseFirestore in Frameworks */,
-				AA0000000000000000000064 /* FirebaseFunctions in Frameworks */,
-				AA0000000000000000000065 /* FirebaseAppCheck in Frameworks */,
 				AA0000000000000000000066 /* GoogleSignIn in Frameworks */,
+				AA0000000000000000000067 /* RevenueCat in Frameworks */,
+				AA0000000000000000000068 /* RevenueCatUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,9 +147,9 @@
 				AA0000000000000000000051 /* FirebaseCore */,
 				AA0000000000000000000052 /* FirebaseAuth */,
 				AA0000000000000000000053 /* FirebaseFirestore */,
-				AA0000000000000000000054 /* FirebaseFunctions */,
-				AA0000000000000000000055 /* FirebaseAppCheck */,
 				AA0000000000000000000056 /* GoogleSignIn */,
+				AA0000000000000000000057 /* RevenueCat */,
+				AA0000000000000000000058 /* RevenueCatUI */,
 			);
 			productName = PGYM;
 			productReference = AA0000000000000000000007 /* PGYM.app */;
@@ -237,6 +237,7 @@
 				AA0000000000000000000042 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
 				AA0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				AA0000000000000000000041 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				AA0000000000000000000043 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA0000000000000000000003 /* Products */;
@@ -438,7 +439,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = GA978N825M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
@@ -461,7 +462,7 @@
 					"$(inherited)",
 					"-ObjC",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.pgym;
+				PRODUCT_BUNDLE_IDENTIFIER = com.konradgnat.pgym;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -482,7 +483,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = GA978N825M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
@@ -505,7 +506,7 @@
 					"$(inherited)",
 					"-ObjC",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.pgym;
+				PRODUCT_BUNDLE_IDENTIFIER = com.konradgnat.pgym;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -660,6 +661,14 @@
 				minimumVersion = 10.1.0;
 			};
 		};
+		AA0000000000000000000043 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -682,20 +691,20 @@
 			package = AA0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
 		};
-		AA0000000000000000000054 /* FirebaseFunctions */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AA0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseFunctions;
-		};
-		AA0000000000000000000055 /* FirebaseAppCheck */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AA0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAppCheck;
-		};
 		AA0000000000000000000056 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AA0000000000000000000041 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		AA0000000000000000000057 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000043 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+		AA0000000000000000000058 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000043 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCatUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -10,6 +10,10 @@
   AppRootView.swift, so launch hands over to the app without a flash. Assets: LaunchBackground, LaunchMark.
 -->
 <dict>
+	<key>PGYM_API_BASE_URL</key>
+	<string>$(PGYM_API_BASE_URL)</string>
+	<key>REVENUECAT_API_KEY</key>
+	<string>$(REVENUECAT_API_KEY)</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

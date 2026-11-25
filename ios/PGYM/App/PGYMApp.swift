@@ -61,6 +61,7 @@ struct PGYMApp: App {
             sessionSync: sessionSync,
             account: session,
             reminders: services.reminders,
+            purchases: services.purchases,
             unit: { [session] in WeightUnit.preferred(profile: session.profile?.units) }
         )
         _proofs = State(initialValue: proofs)
@@ -91,12 +92,14 @@ struct PGYMApp: App {
                 // Routines and sessions saved while signed out or offline go up as soon as both change.
                 .onChange(of: session.user?.uid) { _, uid in
                     if let uid {
+                        Task { await services.purchases.identify(uid: uid) }
                         RoutineSyncCoordinator.shared.requestSync()
                         sessionSync.requestSync()
                         proofs.consent.load(uid: uid, profileValue: session.profile?.physiqueConsent)
                         proofs.queue.requestStamp()
                         Task { await proofs.controls.retryPending() }
                     } else {
+                        Task { await services.purchases.signedOut() }
                         proofs.consent.reset()
                         proofs.images.removeAll()
                         proofs.completedSessionID = nil

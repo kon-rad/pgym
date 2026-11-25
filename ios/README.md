@@ -2,6 +2,26 @@
 
 The PGYM iPhone app. Swift, SwiftUI, iOS 17 and later, Swift Package Manager.
 
+## HTTPS and PGYM Pro setup
+
+Production app operations use the configurable HTTPS service, while Firebase remains responsible
+for Authentication and Firestore. Every protected request obtains a freshly refreshed Firebase ID
+token and sends it as `Authorization: Bearer <token>`. Firebase Functions and App Check are not
+linked to the iOS target.
+
+1. Copy `Config/Local.example.xcconfig` to `Config/Local.xcconfig`. The copy is ignored by git.
+2. Set `PGYM_API_BASE_URL` if the service is not at the committed production URL.
+3. Set `REVENUECAT_API_KEY` to the RevenueCat public Apple SDK key. Empty and placeholder values
+   leave purchases disabled without affecting workouts.
+4. In RevenueCat, create entitlement `pro`, make the product offering current, and attach
+   `com.konradgnat.pgym.pro.monthly` and `com.konradgnat.pgym.pro.annual`. Price and introductory
+   eligibility come from StoreKit and are never hardcoded in the app.
+
+The app identifies RevenueCat with the Firebase UID after sign-in and logs out RevenueCat after
+Firebase sign-out. Tests inject `FakePurchaseService`; they do not contact RevenueCat or StoreKit.
+A RevenueCat failure keeps Pro actions locked but never blocks logging, stamping, the local proof
+card, the basic weekly streak, or existing data.
+
 ## Requirements
 
 - Xcode 26 or later (the project uses folder-synchronised groups, and Firebase iOS SDK 13 needs Swift tools 6.2).
@@ -177,7 +197,7 @@ Views D9 Stamping (the stamp's pending state on D11, as `pgym-flow-spec.md` merg
 | Piece | Where |
 |---|---|
 | Typed `createUploadUrls`, `getPhotoUrls`, `stampSession` (shapes from `backend/src/handlers.ts`), error mapping | `PGYM/Core/API/API.swift` |
-| Firebase callables; App Check provider (App Attest on a device, debug provider on the simulator and the emulator) | `PGYM/Core/API/FirebaseProofAPI.swift`, set up in `PGYM/App/FirebaseBootstrap.swift` |
+| Authenticated HTTPS with a fresh Firebase ID token | `PGYM/Core/API/HTTPSClient.swift`, `HTTPSProofAPI.swift`; base URL from `PGYM_API_BASE_URL` |
 | In-memory server and bucket for tests and builds without Firebase | `PGYM/Core/API/FakeProofAPI.swift` |
 | PUT from the file to the presigned URL, with progress | `PGYM/Core/SyncEngine/ProofUploader.swift` |
 | Upload, retry, URL renewal, stamp, the persisted queue | `PGYM/Core/SyncEngine/ProofStampQueue.swift` |

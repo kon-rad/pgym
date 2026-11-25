@@ -118,6 +118,12 @@ final class FakeAuthService: AuthService {
         return currentUser
     }
 
+    func freshIDToken() async throws -> String {
+        try failIfAsked()
+        guard currentUser != nil else { throw AuthFailure.wrongCredentials }
+        return "fake-firebase-id-token"
+    }
+
     func signOut() throws {
         try failIfAsked()
         signOutCount += 1

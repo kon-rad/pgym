@@ -45,6 +45,7 @@ struct ProfileScreen: View {
                 case .settings: SettingsScreen()
                 case .privacy: PrivacyDataScreen()
                 case .about: AboutScreen()
+                case .agentAccess: AgentAccessScreen()
                 case .deleteAccount: DeleteAccountScreen()
                 }
             }
@@ -81,6 +82,7 @@ struct ProfileScreen: View {
             row(.routines, title: ProfileCopy.routines, detail: routines.isEmpty ? nil : "\(routines.count)", id: "profile.routines")
             row(.goal, title: ProfileCopy.goalAndSchedule, detail: session.profile?.goalPerWeek.map { "\($0)/wk" }, id: "profile.goal")
             row(.settings, title: ProfileCopy.settings, detail: nil, id: "profile.settings")
+            row(.agentAccess, title: "Agent access", detail: "PRO", id: "profile.agentAccess")
             row(.privacy, title: ProfileCopy.privacy, detail: nil, id: "profile.privacy")
             row(.about, title: ProfileCopy.about, detail: nil, id: "profile.about")
         }
@@ -102,6 +104,7 @@ enum ProfileRoute: Hashable {
     case settings
     case privacy
     case about
+    case agentAccess
     case deleteAccount
 }
 
