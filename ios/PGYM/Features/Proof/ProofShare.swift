@@ -147,3 +147,46 @@ struct ProofShareActions: View {
         }
     }
 }
+
+/// The two mutually exclusive overlays offered before sharing or saving a stamped proof.
+struct ProofCardOverlayPicker: View {
+    @Binding var selection: ProofCardRenderer.ShareMode
+    let scoreAvailable: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.grid(2)) {
+            Text("CARD OVERLAY")
+                .pgymText(.label)
+                .foregroundStyle(Color.steel)
+            HStack(spacing: Spacing.grid(2)) {
+                option(.workout, label: "Workout", detail: "Sets · lifted · time")
+                option(.scores, label: "AI scores", detail: "6 dimensions + overall")
+            }
+            if !scoreAvailable {
+                Text("Generate AI analysis to use the score overlay.")
+                    .pgymText(.body, size: 13)
+                    .foregroundStyle(Color.steel)
+            }
+        }
+        .accessibilityIdentifier("proof.overlayPicker")
+    }
+
+    private func option(_ mode: ProofCardRenderer.ShareMode, label: String, detail: String) -> some View {
+        Button {
+            selection = mode
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.grid(1)) {
+                Text(label).pgymText(.bodyMedium, size: 16)
+                Text(detail).pgymText(.body, size: 12)
+            }
+            .foregroundStyle(selection == mode ? Color.ink : Color.chalk)
+            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+            .padding(.horizontal, Spacing.grid(3))
+            .background(RoundedRectangle(cornerRadius: Radius.card).fill(selection == mode ? Color.plate : Color.iron))
+        }
+        .buttonStyle(.plain)
+        .disabled(mode == .scores && !scoreAvailable)
+        .accessibilityAddTraits(selection == mode ? [.isSelected] : [])
+        .accessibilityIdentifier("proof.overlay.\(mode.rawValue)")
+    }
+}

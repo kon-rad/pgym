@@ -70,6 +70,9 @@ struct PhysiqueRecord: Equatable, Sendable {
 
     /// A score the app may show: a number and no refusal.
     var isScored: Bool { score != nil && refusedReason == nil }
+    var hasSevenScores: Bool {
+        isScored && PhysiqueDimension.allCases.allSatisfy { dimensions[$0.rawValue] != nil }
+    }
 }
 
 /// A live listener. `cancel()` stops it; so does releasing it.

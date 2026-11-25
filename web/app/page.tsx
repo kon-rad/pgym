@@ -146,7 +146,7 @@ export default function Home() {
             </li>
             <li className="fact" data-reveal>
               <span className="label">Share</span>
-              <p>Post a workout card, add the scores, or show scores alone. You choose the layout and audience every time.</p>
+              <p>Choose a workout overlay or a seven-score overlay before sharing. You choose the card and audience every time.</p>
             </li>
           </ul>
           <p className="facts-link"><Link href="/blog/measure-the-work-see-the-change">Read the photo and score guide</Link></p>
