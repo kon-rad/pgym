@@ -1,6 +1,8 @@
-# web
+# PGYM web and API service
 
-The PGYM landing site: Next.js (App Router), TypeScript. No analytics script.
+The single PGYM production process: Next.js landing pages, waitlist, authenticated iOS operations, transient photo insight, health endpoint and read-only agent API. No analytics script.
+
+Production dependencies are Firebase Authentication, Firestore and Together AI. Firebase Cloud Functions, Firebase AI Logic, Gemini, AWS and server-side photo storage are not used. The default open-source vision model is `Qwen/Qwen3-VL-8B-Instruct`, configurable with `TOGETHER_MODEL`. The request is a reduced JPEG up to 1.5 MB; neither bytes nor model output are logged or persisted.
 
 ## Run it
 
@@ -24,6 +26,23 @@ npm test        # needs the build: starts `next start` and requests every page
 
 Tests never reach Firestore: the waitlist tests inject an in-memory store, and the
 built-app test starts the server with no Firebase credentials.
+
+## API routes
+
+- `POST /api/sessions/stamp`, `DELETE /api/sessions/{id}`, `DELETE /api/account`
+- `POST /api/agent-tokens`, `DELETE /api/agent-tokens/{id}`
+- `POST /api/photo-insight` with a raw `image/jpeg` body
+- `GET /v1/...` for scoped, read-only personal tokens
+- `GET /api/health` with the running `APP_REVISION`
+
+Authenticated operation routes require `Authorization: Bearer <Firebase ID token>`. Week rollover runs lazily under active traffic. `deploy/` contains systemd, Caddy, release verification and explicit-host deployment templates.
+
+After `npm run build`, package and validate a revision without contacting a host:
+
+```sh
+./deploy/package-release.sh abc1234 /tmp/pgym-abc1234.tar.gz
+./deploy/deploy.sh --host deploy-user@[DOMAIN] --revision abc1234 --artifact /tmp/pgym-abc1234.tar.gz --dry-run
+```
 
 ## Pages
 
@@ -62,6 +81,11 @@ one needs a rebuild; the rest are read at request time.
 | `FIREBASE_CLIENT_EMAIL` | Waitlist writes (service account) | Waitlist answers 503 |
 | `FIREBASE_PRIVATE_KEY` | Waitlist writes; newlines as `\n` | Waitlist answers 503 |
 | `FIRESTORE_EMULATOR_HOST` | Local only, instead of the two credentials above | Uses real credentials |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Firebase Admin application-default credentials | API operations unavailable |
+| `TOGETHER_API_KEY` | Transient photo insight | Photo insight answers 409 |
+| `TOGETHER_MODEL` | Open-source Together vision model | `Qwen/Qwen3-VL-8B-Instruct` |
+| `APP_REVISION` | Health and exact-release verification | `development` |
+| `PORT`, `HOSTNAME` | Standalone Next.js listener | Next.js defaults |
 
 ## The launch flag
 

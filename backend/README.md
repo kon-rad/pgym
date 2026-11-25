@@ -1,8 +1,10 @@
-# PGYM backend
+# PGYM legacy backend
 
-Firebase Cloud Functions 2nd gen, Firestore rules and the read-only agent API. Node 20+ is required; Java 11+ is required for emulator tests.
+This directory is no longer the production runtime. It preserves the former Firebase Functions implementation and Firestore emulator tests as migration history. The supported landing-page and API process is the Next.js service in `web/`.
 
-## Privacy-first proof flow
+Firebase remains the Authentication and Firestore provider. Cloud Functions, Firebase AI Logic, Gemini, AWS and server-side photo storage are not active production dependencies.
+
+## Historical proof flow
 
 The production backend never receives or retains a proof photo or rendered card during stamping. `stampSession` accepts `{sessionId, photoSHA256, cardFormatVersion, filter, proofImageCreated}` and atomically records the authenticated synced session, server timestamp, next proof number, weekly streak and structured workout stats. SHA-256 binds the record to exact local bytes but does not prove what the photo depicts.
 
@@ -10,19 +12,21 @@ The production backend never receives or retains a proof photo or rendered card 
 
 Legacy S3 and physique modules remain isolated only for safe deletion and prelaunch fixture compatibility. `src/index.ts` exports no upload URL, signed read, queued physique-score or S3-configured function.
 
-## Active functions
+## Former function exports
+
+These exports are retained for migration comparison and emulator regression tests. They are not deployed.
 
 | Function | Purpose |
 |---|---|
 | `stampSession` | Server timestamp, proof number, digest metadata, stats and weekly streak |
-| `analyzePhotoInsight` | Optional transient Gemini inference with no result persistence |
+| `analyzePhotoInsight` | Retired transient Gemini implementation; replaced by Together AI in `web/` |
 | `deleteSession` | Delete structured session data and rebuild affected aggregates |
 | `deleteAccount` | Delete Firestore data and Auth user; optional injected legacy cleanup remains safe |
 | `createAgentToken`, `revokeAgentToken` | Read-only personal token lifecycle; hashes only |
 | `api` | Structured workout reads under `/v1`; no photo, card or insight route/scope |
 | `rollWeek` | Hourly weekly-streak closure |
 
-Only `PGYM_GEMINI_API_KEY` is an active production secret. Local project ID is `pgym-local`.
+No secret or deployment configuration in this directory is active in production. Local project ID is `pgym-local`.
 
 ## Checks
 
