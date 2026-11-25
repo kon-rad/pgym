@@ -18,7 +18,7 @@ final class FirestoreSessionRemote: SessionRemote {
     }
 
     func delete(sessionID: String, uid: String) async throws {
-        let client = HTTPSClient.live(tokenProvider: FirebaseAuthService())
+        let client = await HTTPSClient.live(tokenProvider: FirebaseAuthService())
         let _: DeleteRemoteSessionResponse = try await client.send("DELETE", path: "/api/sessions/\(sessionID)")
     }
 
