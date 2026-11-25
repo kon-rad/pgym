@@ -2,7 +2,7 @@
 
 The single PGYM production process: Next.js landing pages, waitlist, authenticated iOS operations, transient photo insight, health endpoint and read-only agent API. No analytics script.
 
-Production dependencies are Firebase Authentication, Firestore and Together AI. Firebase Cloud Functions, Firebase AI Logic, Gemini, AWS and server-side photo storage are not used. The default open-source vision model is `Qwen/Qwen3-VL-8B-Instruct`, configurable with `TOGETHER_MODEL`. The request is a reduced JPEG up to 1.5 MB; neither bytes nor model output are logged or persisted.
+Production dependencies are Firebase Authentication, Firestore, RevenueCat and Together AI. Firebase Cloud Functions, Firebase AI Logic, Gemini, AWS and server-side photo storage are not used. The default open-source vision model is `Qwen/Qwen3-VL-8B-Instruct`, configurable with `TOGETHER_MODEL`. The request is a reduced JPEG up to 1.5 MB; neither bytes nor model output are logged or persisted.
 
 ## Run it
 
@@ -36,6 +36,8 @@ built-app test starts the server with no Firebase credentials.
 - `GET /api/health` with the running `APP_REVISION`
 
 Authenticated operation routes require `Authorization: Bearer <Firebase ID token>`. Week rollover runs lazily under active traffic. `deploy/` contains systemd, Caddy, release verification and explicit-host deployment templates.
+
+Photo insight and agent-token creation or revocation additionally require the active RevenueCat entitlement configured by `REVENUECAT_PRO_ENTITLEMENT_ID` (`pro` in the dashboard). The verified Firebase uid is the RevenueCat App User ID. The server reads RevenueCat API v2 active entitlements for that customer. These routes fail closed: inactive or expired access returns HTTP 403, while missing configuration or a provider failure returns HTTP 503. Session stamping, workout logging, proof cards and account operations remain free.
 
 After `npm run build`, package and validate a revision without contacting a host:
 
@@ -84,6 +86,9 @@ one needs a rebuild; the rest are read at request time.
 | `GOOGLE_APPLICATION_CREDENTIALS` | Firebase Admin application-default credentials | API operations unavailable |
 | `TOGETHER_API_KEY` | Transient photo insight | Photo insight answers 409 |
 | `TOGETHER_MODEL` | Open-source Together vision model | `Qwen/Qwen3-VL-8B-Instruct` |
+| `REVENUECAT_SECRET_API_KEY` | RevenueCat v2 secret with `customer_information:customers:read` for paid-route checks | Paid routes answer 503 |
+| `REVENUECAT_PROJECT_ID` | RevenueCat project ID used by the v2 customer endpoint | Paid routes answer 503 |
+| `REVENUECAT_PRO_ENTITLEMENT_ID` | Internal RevenueCat entitlement ID for the dashboard lookup key `pro` | Paid routes answer 503 |
 | `APP_REVISION` | Health and exact-release verification | `development` |
 | `PORT`, `HOSTNAME` | Standalone Next.js listener | Next.js defaults |
 
