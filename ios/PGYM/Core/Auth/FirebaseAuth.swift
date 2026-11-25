@@ -8,7 +8,7 @@ import UIKit
 
 /// `AuthService` on Firebase Authentication: Apple (with the nonce), Google, email and password.
 @MainActor
-final class FirebaseAuthService: AuthService {
+final class FirebaseAuthService: AuthService, IDTokenProvider {
     private let auth: Auth
 
     init(auth: Auth = .auth()) {
@@ -238,10 +238,11 @@ final class FirestoreUserRepository: UserRepository {
 extension AuthDependencies {
     /// The real services. Only valid after `FirebaseBootstrap.configure` returned `.configured`.
     static func firebase() -> AuthDependencies {
-        AuthDependencies(
-            auth: FirebaseAuthService(),
+        let auth = FirebaseAuthService()
+        return AuthDependencies(
+            auth: auth,
             users: FirestoreUserRepository(),
-            functions: HTTPSAccountService(client: HTTPSClient.live(tokenProvider: FirebaseAuthService())),
+            functions: HTTPSAccountService(client: HTTPSClient.live(tokenProvider: auth)),
             handleOpenURL: { FirebaseAuthService.handleOpenURL($0) }
         )
     }
