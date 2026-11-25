@@ -97,6 +97,14 @@ describe('server-owned fields are denied to clients', () => {
     await assertFails(updateDoc(doc(db, `users/${alice}/sessions/draft1`), { stampedAt: Timestamp.now() }));
   });
 
+  it('privacy-first proof metadata on a session', async () => {
+    const db = as(alice);
+    await assertFails(updateDoc(doc(db, `users/${alice}/sessions/draft1`), { photoSHA256: 'a'.repeat(64) }));
+    await assertFails(updateDoc(doc(db, `users/${alice}/sessions/draft1`), { cardFormatVersion: 1 }));
+    await assertFails(updateDoc(doc(db, `users/${alice}/sessions/draft1`), { cardFilter: 'iron' }));
+    await assertFails(updateDoc(doc(db, `users/${alice}/sessions/draft1`), { proofImageCreated: true }));
+  });
+
   it('physique on a session', async () => {
     const db = as(alice);
     await assertFails(updateDoc(doc(db, `users/${alice}/sessions/draft1`), { physique: { score: 99, tip: 'x' } }));
