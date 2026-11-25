@@ -20,7 +20,7 @@ Wear clothing you are comfortable being photographed in. Shorts can help show th
 
 For comparison photos, try to repeat the same stance, camera height, distance, light and clothing. Morning photos under similar conditions may be easier to compare, but **the workout proof is taken when you finish training**. A post-workout pump, hydration and lighting can move the appearance of a score. Do not retake a proof to chase a higher number.
 
-Choose a card filter and size, then tap **Stamp it**. Once the server stamps the workout, open its card detail page and tap **Get AI analysis and coaching**. If you have Pro but have not enabled analysis, PGYM asks for consent first. It sends a reduced copy of that workout's original photo for one analysis request; the server does not store the image. If the original photo has been removed from your phone, that card cannot be analyzed again.
+Choose a card filter and size, then tap **Stamp it**. Once the server stamps the workout, tap **Get AI analysis and coaching** on the completed card before you tap Done. You can also request it later from that workout's detail page. If you have Pro but have not enabled analysis, PGYM asks for consent first. It sends a reduced copy of that workout's original photo for one analysis request; the server does not store the image. If the original photo has been removed from your phone, that card cannot be analyzed again.
 
 ## Read the seven scores
 
@@ -47,7 +47,7 @@ This is why the two records belong together. The workout log tracks your trainin
 
 ## Choose what goes on the card
 
-From a stamped workout's detail page, tap **Share again** and choose **Workout stats**, **Stats + scores**, or **Scores only**. The first is the ordinary proof card and contains no AI score. The other two render the seven scores over the original local photo. The coaching text stays on your private card detail page. PGYM opens the iOS share sheet only after you choose a layout; you decide whether to post, send privately or save the image. If the original photo is gone from your phone, score layouts cannot be rebuilt, but the ordinary workout card remains available.
+Before you leave the completed card, choose one of two overlays: **Workout** shows sets, weight lifted and time; **AI scores** shows the six dimensions and overall score. After analysis, you can see the results and switch the preview to AI scores before sharing or saving. You can make the same choice later from the workout detail page before tapping **Share again**. The coaching text stays on the detail page. PGYM opens the iOS share sheet only after you choose an overlay; you decide whether to post, send privately or save the image. If the original photo is gone from your phone, the AI score card cannot be rebuilt, but the ordinary workout card remains available.
 
 Sharing can make a workout feel more tangible and invite encouragement from people you trust. It is optional. You do not need a public post or a public score to get the value of a consistent record. Choose the audience and layout that make you want to keep training, and remember that a social post cannot validate the AI estimate.
 

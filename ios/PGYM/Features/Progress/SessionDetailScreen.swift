@@ -27,6 +27,8 @@ struct SessionDetailScreen: View {
     @State private var showingConsent = false
     @State private var analyzing = false
     @State private var analysisError: String?
+    @State private var overlay: ProofCardRenderer.ShareMode = .workout
+    @State private var scoreCardData: Data?
 
     init(sessionID: String) {
         self.sessionID = sessionID
@@ -36,6 +38,7 @@ struct SessionDetailScreen: View {
 
     private var unit: WeightUnit { WeightUnit.preferred(profile: account?.profile?.units) }
     private var isOnline: Bool { network?.isOnline ?? true }
+    private var selectedCardData: Data? { overlay == .scores ? scoreCardData : cardData }
 
     var body: some View {
         Group {
@@ -108,7 +111,11 @@ struct SessionDetailScreen: View {
                     }
                     .disabled(analyzing || !isOnline)
                     .accessibilityIdentifier("e3.analyze")
-                    if analyzing { ProgressView("Analyzing photo") }
+                    if analyzing {
+                        HStack { Spacer(); ProgressView("Analyzing photo"); Spacer() }
+                            .frame(maxWidth: .infinity)
+                            .accessibilityIdentifier("e3.analyzing")
+                    }
                     if let analysisError {
                         Text(analysisError).pgymText(.body, size: 15).foregroundStyle(Color.bone)
                     }
@@ -127,23 +134,21 @@ struct SessionDetailScreen: View {
         }
         .safeAreaInset(edge: .bottom) {
             if session.status == .stamped, session.proofNumber != nil {
-                Menu {
-                    Button("Workout stats") { share(session, mode: .workout) }
-                    if session.physique?.isScored == true {
-                        Button("Stats + scores") { share(session, mode: .workoutAndScores) }
-                        Button("Scores only") { share(session, mode: .scores) }
+                VStack(spacing: Spacing.grid(2)) {
+                    ProofCardOverlayPicker(selection: Binding(get: { overlay }, set: { chooseOverlay($0, session: session) }), scoreAvailable: session.physique?.hasSevenScores == true)
+                    Button { share(session) } label: {
+                        Text(ProgressCopy.shareAgain.uppercased())
+                            .pgymText(.labelBold)
+                            .foregroundStyle(Color.ink)
+                            .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
+                            .background(RoundedRectangle(cornerRadius: Radius.button).fill(Color.plate))
                     }
-                } label: {
-                    Text(ProgressCopy.shareAgain.uppercased())
-                        .pgymText(.labelBold)
-                        .foregroundStyle(Color.ink)
-                        .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
-                        .background(RoundedRectangle(cornerRadius: Radius.button).fill(Color.plate))
+                    .disabled(selectedCardData == nil)
+                    .accessibilityIdentifier("e3.share")
                 }
-                .disabled(cardData == nil)
                 .padding(.horizontal, Spacing.screenMargin)
                 .padding(.bottom, Spacing.grid(2))
-                .accessibilityIdentifier("e3.share")
+                .background(Color.ink)
             }
         }
         .toolbar {
@@ -205,7 +210,7 @@ struct SessionDetailScreen: View {
         VStack(alignment: .leading, spacing: Spacing.grid(2)) {
             ZStack {
                 Color.photo
-                if let cardData, let image = ProofImageIO.decode(cardData) {
+                if let selectedCardData, let image = ProofImageIO.decode(selectedCardData) {
                     Image(decorative: image, scale: 1)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -269,26 +274,20 @@ struct SessionDetailScreen: View {
 
     // MARK: Actions
 
-    private func share(_ session: WorkoutSession, mode: ProofCardRenderer.ShareMode) {
-        guard let cardData else { return }
-        if mode == .workout {
-            shareItem = try? ProofShareItem(cardJPEG: cardData, proofNumber: session.proofNumber)
-            return
-        }
-        guard let photo = proofs.store.loadPhoto(session.id),
-              let record = proofs.store.record(session.id),
-              let receipt = session.stampReceipt,
-              let score = session.physique else {
+    private func chooseOverlay(_ mode: ProofCardRenderer.ShareMode, session: WorkoutSession) {
+        if mode == .scores {
+            scoreCardData = PhysiqueScoreCard.jpeg(session: session, store: proofs.store, unit: unit)
+            guard scoreCardData != nil else {
             analysisError = "The original photo is needed to make a score card. Your workout card is still available."
             return
+            }
         }
-        let summary = ProofFeature.stampedSummary(session: session, receipt: receipt, unit: unit)
-        guard let image = try? ProofCardRenderer.render(photo: photo, summary: summary, options: record.options, score: score, shareMode: mode),
-              let jpeg = try? ProofImageIO.cardJPEG(image, size: record.options.size) else {
-            analysisError = "Could not make the score card. Try again."
-            return
-        }
-        shareItem = try? ProofShareItem(cardJPEG: jpeg, proofNumber: session.proofNumber)
+        overlay = mode
+    }
+
+    private func share(_ session: WorkoutSession) {
+        guard let selectedCardData else { return }
+        shareItem = try? ProofShareItem(cardJPEG: selectedCardData, proofNumber: session.proofNumber)
     }
 
     private func analyze(_ session: WorkoutSession) async {
@@ -306,8 +305,9 @@ struct SessionDetailScreen: View {
             let result = try await proofs.api.analyzePhysiquePhoto(jpeg: jpeg, sessionID: session.id)
             session.applyPhysique(result)
             try context.save()
+            chooseOverlay(.scores, session: session)
         } catch {
-            analysisError = "Analysis was unavailable. Your card and previous scores are unchanged. Try again."
+            analysisError = PhysiqueAnalysisMessage.failure(error)
         }
     }
 

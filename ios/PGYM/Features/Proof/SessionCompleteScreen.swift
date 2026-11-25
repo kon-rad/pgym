@@ -16,7 +16,10 @@ struct SessionCompleteScreen: View {
     var onDone: () -> Void
 
     @Environment(ProofServices.self) private var services
+    @Environment(AppServices.self) private var app
+    @Environment(\.modelContext) private var context
     @Environment(AppSession.self) private var account: AppSession?
+    @Environment(NetworkMonitor.self) private var network: NetworkMonitor?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query private var matches: [WorkoutSession]
@@ -28,6 +31,11 @@ struct SessionCompleteScreen: View {
     @State private var cardJPEG: Data?
     @State private var consentSheet = false
     @State private var appeared = false
+    @State private var overlay: ProofCardRenderer.ShareMode = .workout
+    @State private var scoreCardJPEG: Data?
+    @State private var analyzing = false
+    @State private var analysisError: String?
+    @State private var showingPaywall = false
 
     init(sessionID: String, onDone: @escaping () -> Void) {
         self.sessionID = sessionID
@@ -39,6 +47,8 @@ struct SessionCompleteScreen: View {
     private var phase: StampPhase? { services.queue.phase(for: sessionID) }
     private var unit: WeightUnit { WeightUnit.preferred(profile: account?.profile?.units) }
     private var uid: String? { account?.user?.uid }
+    private var isOnline: Bool { network?.isOnline ?? true }
+    private var selectedCardJPEG: Data? { overlay == .scores ? scoreCardJPEG : cardJPEG }
     private var isAdult: Bool {
         PhysiqueRules.isAdult(birthYear: account?.profile?.birthYear, currentYear: AgePolicy.currentYear())
     }
@@ -65,7 +75,10 @@ struct SessionCompleteScreen: View {
                 isAdult: isAdult,
                 onTurnOn: {
                     consentSheet = false
-                    Task { await services.consent.turnOn() }
+                    Task {
+                        await services.consent.turnOn()
+                        if let session { await analyze(session) }
+                    }
                 },
                 onNotNow: {
                     services.consent.markOfferShown()
@@ -74,6 +87,7 @@ struct SessionCompleteScreen: View {
             )
             .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showingPaywall) { ProPaywallView() }
     }
 
     // MARK: Model
@@ -121,7 +135,8 @@ struct SessionCompleteScreen: View {
                     weekSection(model)
                     statsRow(model)
                     if !model.newBests.isEmpty { bestsSection(model) }
-                    if let score = model.score { ScoreSection(block: score) }
+                    if let record = session.physique, services.consent.isOn { ScoreBlockView(record: record) }
+                    if model.canShare { analysisSection(session) }
                     if model.showsConsentOffer { consentRow }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,7 +145,11 @@ struct SessionCompleteScreen: View {
                 .opacity(appeared ? 1 : 0)
             }
             VStack(spacing: Spacing.grid(1)) {
-                ProofShareActions(cardJPEG: model.canShare ? cardJPEG : nil, proofNumber: session.proofNumber)
+                if model.canShare {
+                    ProofCardOverlayPicker(selection: Binding(get: { overlay }, set: { chooseOverlay($0, session: session) }), scoreAvailable: session.physique?.hasSevenScores == true)
+                        .padding(.bottom, Spacing.grid(2))
+                }
+                ProofShareActions(cardJPEG: model.canShare ? selectedCardJPEG : nil, proofNumber: session.proofNumber)
                 Button(StampCopy.done, action: onDone)
                     .font(.pgym(.bodyMedium, size: 17))
                     .foregroundStyle(Color.chalk)
@@ -146,7 +165,7 @@ struct SessionCompleteScreen: View {
     @ViewBuilder
     private func cardPreview(_ session: WorkoutSession) -> some View {
         Group {
-            if let cardJPEG, let image = ProofImageIO.decode(cardJPEG) {
+            if let selectedCardJPEG, let image = ProofImageIO.decode(selectedCardJPEG) {
                 Image(decorative: image, scale: 1)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -234,6 +253,70 @@ struct SessionCompleteScreen: View {
         .accessibilityIdentifier("d11.consentRow")
         // Shown once: seeing it counts (pgym-flow-spec.md D10, "Entry").
         .onAppear { services.consent.markOfferShown() }
+    }
+
+    private func analysisSection(_ session: WorkoutSession) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.grid(2)) {
+            Button {
+                if !app.purchases.isPro { showingPaywall = true }
+                else if !services.consent.isOn { consentSheet = true }
+                else { Task { await analyze(session) } }
+            } label: {
+                HStack {
+                    Image(systemName: "sparkles")
+                    Text(session.physique?.isScored == true ? "Regenerate AI analysis" : "Get AI analysis and coaching")
+                    Spacer()
+                    if !app.purchases.isPro { Text("PRO") }
+                }
+                .pgymText(.bodyMedium, size: 17)
+                .foregroundStyle(Color.ink)
+                .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
+                .padding(.horizontal, Spacing.grid(4))
+                .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.plate))
+            }
+            .disabled(analyzing || !isOnline)
+            .accessibilityIdentifier("d11.analyze")
+            if analyzing {
+                HStack { Spacer(); ProgressView("Analyzing photo"); Spacer() }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier("d11.analyzing")
+            }
+            if let analysisError {
+                Text(analysisError).pgymText(.body, size: 15).foregroundStyle(Color.bone)
+            }
+        }
+    }
+
+    private func chooseOverlay(_ mode: ProofCardRenderer.ShareMode, session: WorkoutSession) {
+        if mode == .scores {
+            scoreCardJPEG = PhysiqueScoreCard.jpeg(session: session, store: services.store, unit: unit)
+            guard scoreCardJPEG != nil else {
+                analysisError = "The original photo is needed to make a score card. Your workout card is still available."
+                return
+            }
+        }
+        overlay = mode
+    }
+
+    private func analyze(_ session: WorkoutSession) async {
+        guard app.purchases.isPro else { showingPaywall = true; return }
+        guard services.consent.isOn else { consentSheet = true; return }
+        guard let photo = services.store.loadPhoto(session.id),
+              let jpeg = try? ProofImageIO.analysisJPEG(photo) else {
+            analysisError = "The original photo is needed for analysis. Your workout card is still available."
+            return
+        }
+        analyzing = true
+        analysisError = nil
+        defer { analyzing = false }
+        do {
+            let result = try await services.api.analyzePhysiquePhoto(jpeg: jpeg, sessionID: session.id)
+            session.applyPhysique(result)
+            try context.save()
+            chooseOverlay(.scores, session: session)
+        } catch {
+            analysisError = PhysiqueAnalysisMessage.failure(error)
+        }
     }
 
     private func sectionLabel(_ text: String) -> some View {

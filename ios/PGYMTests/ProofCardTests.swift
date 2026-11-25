@@ -93,6 +93,22 @@ final class ProofCardTests: XCTestCase {
         }
     }
 
+    func testScoreOverlayContainsScoresWithoutWorkoutName() throws {
+        let photo = try testPhoto()
+        let options = ProofCardOptions(filter: .raw, size: .feed)
+        let dimensions = ["shoulderWaist": 71, "waistHeight": 72, "torsoDelt": 73,
+                          "symmetryAlignment": 74, "torsoCoreDefinition": 75, "quadProportion": 76]
+        let score = PhysiqueRecord(score: 77, dimensions: dimensions)
+        let first = pixels(try ProofCardRenderer.render(photo: photo, summary: summary(name: "Push A"), options: options, score: score, shareMode: .scores))
+        let renamed = pixels(try ProofCardRenderer.render(photo: photo, summary: summary(name: "Deadlift day"), options: options, score: score, shareMode: .scores))
+        let workout = pixels(try ProofCardRenderer.render(photo: photo, summary: summary(name: "Push A"), options: options, shareMode: .workout))
+        let differentScore = PhysiqueRecord(score: 90, dimensions: dimensions)
+        let rescored = pixels(try ProofCardRenderer.render(photo: photo, summary: summary(name: "Push A"), options: options, score: differentScore, shareMode: .scores))
+        XCTAssertEqual(first, renamed, "The AI overlay must exclude the workout title")
+        XCTAssertNotEqual(first, workout, "The two share overlays must render different content")
+        XCTAssertNotEqual(first, rescored, "The overall score must be visible on the AI overlay")
+    }
+
     func testRendererHandlesLandscapeAndTinyPhotos() throws {
         for (w, h) in [(2048, 1536), (64, 64)] {
             let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
@@ -408,15 +424,15 @@ final class ProofCardTests: XCTestCase {
         let preferences = ProofPreferences(defaults: defaults)
         XCTAssertTrue(preferences.keepCardsOnPhone)
         XCTAssertFalse(preferences.automaticallySaveCardsToPhotos)
-        XCTAssertTrue(preferences.deleteOriginalAfterCard)
+        XCTAssertFalse(preferences.deleteOriginalAfterCard, "the original remains local for optional analysis and score sharing")
 
         preferences.keepCardsOnPhone = false
         preferences.automaticallySaveCardsToPhotos = true
-        preferences.deleteOriginalAfterCard = false
+        preferences.deleteOriginalAfterCard = true
         let reloaded = ProofPreferences(defaults: defaults)
         XCTAssertFalse(reloaded.keepCardsOnPhone)
         XCTAssertTrue(reloaded.automaticallySaveCardsToPhotos)
-        XCTAssertFalse(reloaded.deleteOriginalAfterCard)
+        XCTAssertTrue(reloaded.deleteOriginalAfterCard)
     }
 
     func testShareItemIsANamedJPEGFile() throws {

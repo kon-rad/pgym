@@ -77,3 +77,23 @@ enum ProofCopy {
         return parts.joined(separator: ", ")
     }
 }
+
+enum PhysiqueAnalysisMessage {
+    static func failure(_ error: Error) -> String {
+        guard let error = error as? ProofAPIError else {
+            return "AI analysis is temporarily unavailable. Try again later."
+        }
+        switch error {
+        case .notFound:
+            return "AI analysis is not ready on the server yet. Your proof is saved. Try again later."
+        case .offline:
+            return "Connect to the internet and try AI analysis again."
+        case .unauthenticated:
+            return "Your session needs to be refreshed. Sign in again and retry."
+        case .invalid:
+            return "This photo could not be scored. Try a clear, full-body photo in even light."
+        default:
+            return "AI analysis is temporarily unavailable. Your proof is saved. Try again later."
+        }
+    }
+}

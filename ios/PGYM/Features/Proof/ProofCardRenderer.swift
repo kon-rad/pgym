@@ -13,13 +13,12 @@ import Foundation
 /// main thread.
 enum ProofCardRenderer {
     enum ShareMode: String, CaseIterable, Identifiable {
-        case workout, workoutAndScores, scores
+        case workout, scores
         var id: String { rawValue }
         var title: String {
             switch self {
             case .workout: "Workout stats"
-            case .workoutAndScores: "Stats + scores"
-            case .scores: "Scores only"
+            case .scores: "AI scores"
             }
         }
     }
@@ -63,9 +62,10 @@ enum ProofCardRenderer {
         drawScrim(ctx, layout: layout)
         drawWordmark(ctx, layout: layout)
         drawStamp(ctx, layout: layout, stamp: summary.stamp)
-        drawLowerBlock(ctx, layout: layout, summary: summary, stats: shareMode == .scores ? [] : options.stats.row)
-        if shareMode != .workout, let score, score.isScored {
-            drawScores(ctx, layout: layout, record: score, shareMode: shareMode)
+        if shareMode == .workout {
+            drawLowerBlock(ctx, layout: layout, summary: summary, stats: options.stats.row)
+        } else if let score, score.isScored {
+            drawScores(ctx, layout: layout, record: score)
         }
 
         guard let image = ctx.makeImage() else { throw RenderError.context }
@@ -241,7 +241,7 @@ enum ProofCardRenderer {
         ctx.fill(CGRect(x: 64, y: layout.y(1232), width: width, height: 3))
     }
 
-    private static func drawScores(_ ctx: CGContext, layout: Layout, record: PhysiqueRecord, shareMode: ShareMode) {
+    private static func drawScores(_ ctx: CGContext, layout: Layout, record: PhysiqueRecord) {
         let cells: [(String, Int?)] = [
             ("V TAPER", record.dimensions["shoulderWaist"]),
             ("WAIST", record.dimensions["waistHeight"]),
@@ -251,13 +251,13 @@ enum ProofCardRenderer {
             ("QUADS", record.dimensions["quadProportion"]),
             ("OVERALL", record.score),
         ]
-        let valueY: CGFloat = shareMode == .scores ? 1180 : 1040
-        let labelY: CGFloat = shareMode == .scores ? 1225 : 1085
         for (index, cell) in cells.enumerated() {
             guard let value = cell.1 else { continue }
-            let x = CGFloat(64 + index * 139)
-            draw(ctx, ProofTextRun(text: "\(value)", font: ProofCardFont.mono(30)), at: CGPoint(x: x, y: layout.y(valueY)), color: Palette.chalk)
-            draw(ctx, ProofTextRun(text: cell.0, font: ProofCardFont.mono(12)), at: CGPoint(x: x, y: layout.y(labelY)), color: Palette.chalk)
+            let overall = index == 6
+            let x = overall ? CGFloat(64) : CGFloat(64 + (index % 3) * 330)
+            let valueY = overall ? CGFloat(1240) : CGFloat(955 + (index / 3) * 130)
+            draw(ctx, ProofTextRun(text: "\(value)", font: ProofCardFont.mono(overall ? 54 : 42)), at: CGPoint(x: x, y: layout.y(valueY)), color: Palette.chalk)
+            draw(ctx, ProofTextRun(text: cell.0, font: ProofCardFont.mono(16)), at: CGPoint(x: x, y: layout.y(valueY + 30)), color: Palette.chalk)
         }
     }
 
@@ -271,5 +271,18 @@ enum ProofCardRenderer {
         ctx.textPosition = .zero
         CTLineDraw(line, ctx)
         ctx.restoreGState()
+    }
+}
+
+@MainActor
+enum PhysiqueScoreCard {
+    static func jpeg(session: WorkoutSession, store: ProofStore, unit: WeightUnit) -> Data? {
+        guard let photo = store.loadPhoto(session.id),
+              let card = store.record(session.id),
+              let receipt = session.stampReceipt,
+              let score = session.physique, score.hasSevenScores else { return nil }
+        let summary = ProofFeature.stampedSummary(session: session, receipt: receipt, unit: unit)
+        guard let image = try? ProofCardRenderer.render(photo: photo, summary: summary, options: card.options, score: score, shareMode: .scores) else { return nil }
+        return try? ProofImageIO.cardJPEG(image, size: card.options.size)
     }
 }

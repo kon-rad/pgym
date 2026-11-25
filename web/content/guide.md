@@ -85,10 +85,10 @@ Proof numbers count up and are never reused. #042 means the forty-second time yo
    *Screen D11, Session complete. [Screenshot to add]*
 2. **Pick where it goes.** The iOS share sheet opens with the card image. Send it to any app, or Save to Photos.
    *Screen D12, Share. [Screenshot to add]*
-3. **Share an older one.** Open the session from your proof wall and tap Share again. Choose Workout stats, Stats + scores or Scores only when scores are available.
+3. **Choose your card overlay.** Before tapping Done on the completed card, choose Workout or AI scores. Workout shows your sets, weight lifted and time. AI scores shows the six dimensions and overall score after you generate analysis. The same two choices are available when you open an older session from your proof wall and tap Share again.
    *Screen E3, Session detail. [Screenshot to add]*
 
-The ordinary card does not show AI scores. Score overlays are optional; coaching stays on the detail page. Nothing is shared unless you choose to share it.
+The workout overlay does not show AI scores. The AI score overlay does not show workout statistics; coaching stays on the detail page. Nothing is shared unless you choose to share it.
 
 ## 6. Read your progress
 
@@ -107,7 +107,7 @@ How the streak works: hit your weekly number and the week locks. Every 4 weeks y
 
 AI analysis is optional, for eligible adults with Pro. It estimates six visible dimensions and a separate overall fitness and muscle score from 0 to 100. It adds three coaching sentences and one encouraging sentence. Results stay private in your history unless you choose a score-sharing card layout.
 
-1. **Turn it on.** From a stamped workout's detail page, tap Get AI analysis and coaching. If you are not subscribed, PGYM shows the Pro plans. Before the first analysis, PGYM shows what is sent and who sees it. Tap Turn on, or Not now. It is off until you say yes, and only available to eligible adults.
+1. **Turn it on.** On the completed card, before tapping Done, or from a stamped workout's detail page, tap Get AI analysis and coaching. If you are not subscribed, PGYM shows the Pro plans. Before the first analysis, PGYM shows what is sent and who sees it. Tap Turn on, or Not now. It is off until you say yes, and only available to eligible adults.
    *Screen D10, Physique consent. [Screenshot to add]*
 2. **See it over time.** Open Progress, then Score history. Pick one metric or Overall fitness and muscle from the menu; read each session point, its seven-day average and your personal bests. Tap What do the six scores mean? for descriptions. The workout detail page shows that day's coaching.
    *Screen E5, Score history. [Screenshot to add]*
