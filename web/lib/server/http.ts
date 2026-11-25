@@ -12,6 +12,7 @@ const STATUS: Record<string, number> = {
   'failed-precondition': 409,
   'resource-exhausted': 429,
   unimplemented: 501,
+  unavailable: 503,
 };
 
 export async function uidFromRequest(request: Request): Promise<string> {

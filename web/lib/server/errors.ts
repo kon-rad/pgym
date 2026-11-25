@@ -6,6 +6,7 @@ export type ErrorCode =
   | 'permission-denied'
   | 'resource-exhausted'
   | 'unimplemented'
+  | 'unavailable'
   | 'internal';
 
 export class HttpsError extends Error {

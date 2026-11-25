@@ -4,10 +4,12 @@ import { log } from '@/lib/server/log';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 import { analyzeJpeg, MAX_JPEG_BYTES, TogetherVisionProvider } from '@/lib/server/vision';
 import { services } from '@/lib/server/firebase';
+import { requireProEntitlement } from '@/lib/server/revenuecat';
 
 export async function POST(request: Request) {
   try {
     const uid = await uidFromRequest(request);
+    await requireProEntitlement(uid);
     enforceRateLimit(`vision:${uid}`, 5, 24 * 60 * 60_000);
     const user = (await services().db.doc(`users/${uid}`).get()).data();
     const adultBirthYear = new Date().getUTCFullYear() - 18;
