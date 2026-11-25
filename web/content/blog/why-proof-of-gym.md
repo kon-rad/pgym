@@ -35,7 +35,7 @@ One session, one proof. Retaking the photo replaces it and never adds a second n
 
 No GPS check-in, no anti-cheat. The first person you are proving it to is yourself.
 
-The card has one layout: the photo, a stamp with the proof number and your streak, the timestamp, the session name, and three numbers: sets, total weight lifted, time. One layout means a profile full of them reads as a series.
+The ordinary card shows the photo, a stamp with the proof number and your streak, the timestamp, the session name, and three numbers: sets, weight lifted, time. Pro members who request AI analysis can also choose score overlays when they share again. The ordinary card stays free of scores.
 
 ## Why the streak counts weeks
 
@@ -49,19 +49,19 @@ You will never get a notification saying you broke something. You get one remind
 
 ## Why the score is private
 
-PGYM has an optional AI physique score: a 0 to 100 estimate of visible muscular development and symmetry from your session photo, with one tip about training.
+PGYM Pro offers optional AI analysis: six visual dimension scores, one overall 0 to 100 score, three coaching sentences and one encouraging sentence from a stamped session photo.
 
 An AI judging a body is the feature most able to hurt someone, so it comes with rules.
 
 - It is off until you turn it on, on its own screen, after you have read what is sent and who sees it.
-- Only you see it. It is never on the card, and the app never shares it.
-- It compares you only with your own earlier photos.
-- It refuses a photo with no person, more than one person, only a face, anyone who looks under 18, or too little light. The session still counts.
+- Results stay in your private workout history unless you explicitly choose a score-sharing card layout.
+- Use it to compare your own photos over time, not to rank yourself against strangers.
+- An unsuitable or poorly framed photo may not be scored. The session still counts.
 - Under 18, it can't be turned on.
-- The tip is about training only. Never weight loss, diet, body fat or looks.
+- Coaching is about training and photo consistency, not weight loss, diet or body fat.
 - Turn it off and your stored scores are deleted.
 
-Every score carries the same line: an AI estimate from this photo, not medical advice. Light and pose move the number. Treat it as one more signal, not a verdict.
+Every score is an AI estimate from one photo, not medical advice. Light and pose move the number. Treat it as one more signal, not a verdict. The full capture and chart guide is in [Measure the work. See the change.](/blog/measure-the-work-see-the-change).
 
 ## Open source, and built for your agent
 

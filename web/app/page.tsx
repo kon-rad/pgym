@@ -11,7 +11,7 @@ import { site } from '@/lib/site'
 // pgym-landing-pages.md. Copy: pgym-landing-copy.md, word for word; display lines
 // are written in sentence case there and set in upper case by the CSS. Every
 // number on a card or a screen is an example on the demo account; there are no
-// user counts, ratings or testimonials, and the physique score is never shown.
+// user counts, ratings or testimonials.
 
 const HERO_CARD: ProofCardProps = {
   // The sample session from the proof-card template (pgym-card-4x5.svg).
@@ -47,7 +47,7 @@ const EXAMPLE_CARDS: ProofCardProps[] = [
 const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: 'Is it free?',
-    a: 'PGYM is not out yet, and the price is not decided. It will be on this page before launch, and people on the waitlist hear first.',
+    a: 'PGYM is not out yet. AI analysis and coaching is a Pro feature; subscription plans are shown in the app. Join the waitlist for release news.',
   },
   {
     q: 'Which phones does it work on?',
@@ -55,11 +55,11 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'What happens to my photos?',
-    a: 'Your gym photos stay on your phone. Cards are rendered and kept locally only when you choose. A reinstall, device change or local deletion can make old cards unavailable, while workout history keeps syncing.',
+    a: 'Your original photo and card stay on your phone. If you request Pro AI analysis, a reduced photo is processed for that request; PGYM stores the scores and coaching with your workout, not the image. A reinstall, device change or local deletion can make old cards unavailable.',
   },
   {
     q: 'How does optional AI analysis work?',
-    a: "It is off by default and available only to eligible adults. When enabled, the selected reduced photo is sent once to Google's Gemini API for transient analysis and is not retained by PGYM. One positive training insight returns to your phone. Failure never blocks your proof.",
+    a: 'It is off by default and available to eligible adults with Pro. After you stamp a workout, you can request seven visual scores and short coaching from its original photo. The photo is processed for that request and not stored on the server. Scores and coaching are saved privately with your workout. The ordinary proof card stays available if analysis fails.',
   },
   {
     q: 'What counts as a proof?',
@@ -104,12 +104,13 @@ export default function Home() {
               Proof of <br />
               gym<span className="dot">.</span>
             </h1>
-            <p className="lead">Log your sets. Take one photo. Get your proof.</p>
+            <p className="lead">Log the work. See the change. Share the proof.</p>
             <p className="lead">Your gym photos stay on your phone.</p>
             <p className="hero-body">
-              Every session ends in one card: your photo, the date and time, and a proof number set by our server. Rest
-              days never break the streak.
+              Every workout adds to your training record. A stamped photo becomes a shareable proof card. Optional Pro
+              AI coaching adds seven visual scores, personal records and trends you can follow over time.
             </p>
+            <p className="facts-link"><Link href="/blog/measure-the-work-see-the-change">How the photo scores work</Link></p>
             <div className="hero-action">
               <CallToAction source="hero" readQuery inputId={HERO_EMAIL_ID} />
             </div>
@@ -125,6 +126,30 @@ export default function Home() {
               <EditorScreen card={{ ...HERO_CARD, animateStamp: true }} />
             </Phone>
           </div>
+        </div>
+      </section>
+
+      {/* Visual progress, with the training log as its context. */}
+      <section className="section" aria-labelledby="analysis-title">
+        <div className="wrap">
+          <h2 id="analysis-title" className="display display-h2 section-title" data-reveal>
+            Measure the work. See the change.
+          </h2>
+          <ul className="facts">
+            <li className="fact" data-reveal>
+              <span className="label">Train</span>
+              <p>Log sets, reps and loads. See what you did and where your lifts are moving.</p>
+            </li>
+            <li className="fact" data-reveal>
+              <span className="label">Track</span>
+              <p>Choose optional Pro AI analysis for six visual dimensions and an overall score. Follow your own trend and best scores over time.</p>
+            </li>
+            <li className="fact" data-reveal>
+              <span className="label">Share</span>
+              <p>Post a workout card, add the scores, or show scores alone. You choose the layout and audience every time.</p>
+            </li>
+          </ul>
+          <p className="facts-link"><Link href="/blog/measure-the-work-see-the-change">Read the photo and score guide</Link></p>
         </div>
       </section>
 
@@ -148,8 +173,8 @@ export default function Home() {
             </h2>
             <div className="card-lead">
               <p className="lead">
-                Proof #001 is your first session. Proof #042 is the 42nd time you showed up. One layout, four filters,
-                so your cards line up as a series.
+                Proof #001 is your first session. Proof #042 is the 42nd time you showed up. Four filters keep your
+                cards in one series; optional score layouts let you choose what to reveal.
               </p>
               <p className="label">Iron. Chalk. Plate. Raw.</p>
             </div>
@@ -237,15 +262,15 @@ export default function Home() {
             <li className="fact" data-reveal>
               <span className="label">Photos</span>
               <p>
-                Your photos are stored privately. Only you can open them, plus any agent you choose to give photo
-                access. Nothing leaves the app until you share a card.
+                Original photos and cards stay on your iPhone. If you request AI analysis, a reduced photo is sent for
+                that request and the server stores only the result.
               </p>
             </li>
             <li className="fact" data-reveal>
               <span className="label">The score</span>
               <p>
-                There is an optional AI physique score. It is off until you turn it on, only you see it, and it never
-                goes on the card.
+                The seven AI scores are optional and private in your workout history. They appear on a share card only
+                when you choose a score layout.
               </p>
             </li>
             <li className="fact" data-reveal>
