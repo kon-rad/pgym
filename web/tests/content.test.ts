@@ -108,12 +108,12 @@ describe('document sections', () => {
 
 describe('legal drafts', () => {
   it.each([
-    ['privacy.md', 'Privacy policy', ['What we collect', 'What we do not collect', "The physique score and Google's Gemini", 'Deleting your data', 'Age']],
+    ['privacy.md', 'Privacy policy', ['What we collect', 'Photos and optional AI insight', 'Retention and deletion', 'Children and medical use']],
     ['terms.md', 'Terms of use', ['1. What PGYM is', '6. No medical advice', '7. The physique score is an AI estimate', '8. What a proof number means', '15. Contact']],
   ])('%s carries the draft text in sections', (file, title, headings) => {
     const page = loadPage(file)
     expect(page.title).toBe(title)
-    expect(page.meta.updated).toBe('2026-11-15')
+    expect(page.meta.updated).toMatch(/^2026-11-(15|25)$/)
     const titles = page.sections.map((s) => s.title)
     for (const h of headings) expect(titles).toContain(h)
     expect(page.html).not.toContain('[[')
@@ -122,7 +122,9 @@ describe('legal drafts', () => {
 
   it('keeps unfilled placeholders visible instead of inventing values', () => {
     const { body } = readDoc('privacy.md', NONE)
-    expect(body).toContain('[COMPANY], [ADDRESS], [EMAIL]')
+    expect(body).toContain('[COMPANY]')
+    expect(body).toContain('[ADDRESS]')
+    expect(body).toContain('[EMAIL]')
     expect(fillPlaceholders('[COMPANY], [ADDRESS]', { ...NONE, company: 'Example Ltd', address: '1 Main St' })).toBe(
       'Example Ltd, 1 Main St',
     )

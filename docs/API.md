@@ -2,7 +2,7 @@
 
 The API is read-only structured workout access for one user's own agent. It never returns local proof photos, rendered cards or transient AI insights.
 
-- Base URL: `https://[API-DOMAIN]/v1`
+- Base URL: `https://[DOMAIN]/v1`
 - OpenAPI 3.1: `GET /v1/openapi.json`
 - Authentication: `Authorization: Bearer pgym_pat_...`
 - Tokens are stored only as SHA-256 hashes and can be revoked immediately.
@@ -17,6 +17,8 @@ The API is read-only structured workout access for one user's own agent. It neve
 | `read:sessions` | Session list, session sets and exercise history |
 
 There is no `read:photos` scope and no write scope.
+
+The API runs in the same Next.js process as the landing page. Firebase Cloud Functions are not part of the production request path.
 
 ## Endpoints
 

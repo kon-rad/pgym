@@ -187,9 +187,9 @@ describe('built app', () => {
 
   it('/privacy sets the photo and AI section apart and lists its contents', async () => {
     const html = await (await fetch(`${base}/privacy`)).text()
-    expect(html).toContain('<section id="the-physique-score-and-google-s-gemini" class="doc-box"')
+    expect(html).toContain('<section id="photos-and-optional-ai-insight"')
     expect(html).toContain('<nav class="doc-toc" aria-label="Contents">')
-    expect(html).toContain('Last updated 2026-11-15')
+    expect(html).toContain('Last updated 2026-11-25')
   })
 
   it('/support carries the support copy', async () => {

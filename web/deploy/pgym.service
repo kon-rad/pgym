@@ -1,0 +1,22 @@
+[Unit]
+Description=PGYM Next.js service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pgym
+Group=pgym
+WorkingDirectory=/opt/pgym/current/web
+EnvironmentFile=/etc/pgym/pgym.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pgym
+
+[Install]
+WantedBy=multi-user.target

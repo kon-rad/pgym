@@ -2,7 +2,7 @@
 
 Your gym photos stay on your phone.
 
-Proof photos are captured in-app, normalized and hashed locally. The server issues the timestamp and proof number and stores the SHA-256 binding plus card metadata, never photo or card bytes. Optional AI analysis is off by default; when enabled for an eligible adult, the selected reduced photo is sent once to Google Gemini for transient analysis and is not retained by PGYM. The returned training insight stays local.
+Proof photos are captured in-app, normalized and hashed locally. The server issues the timestamp and proof number and stores the SHA-256 binding plus card metadata, never photo or card bytes. Optional AI analysis sends one reduced JPEG to an open-source vision model hosted by Together AI for transient inference. PGYM does not persist the JPEG or insight.
 
 Proof of gym. Log a session, take one photo in the gym, get one timestamped proof card to share.
 
@@ -13,8 +13,8 @@ Status: early build. Nothing here is released yet.
 | Folder | Holds |
 |---|---|
 | `ios/` | The iPhone app. Swift and SwiftUI, iOS 17 and later, SwiftData for offline-first logging |
-| `backend/` | Firebase Cloud Functions (TypeScript), Firestore rules, and the read-only agent API under `/v1` |
-| `web/` | The Next.js landing site, including the guide, the blog, the page for agents and `/skill.md` |
+| `backend/` | Retired Firebase Functions implementation and emulator-era tests kept as migration history |
+| `web/` | The single production Next.js landing-page and API service, including authenticated operations and `/v1` |
 
 ## How it works
 
@@ -30,7 +30,7 @@ PGYM is agent-first: you can create a personal access token in the app and give 
 
 ## Running locally
 
-The whole stack is meant to run on one machine with no cloud account: the Firebase emulator and a fake vision client. Each folder's README has its local commands.
+The web service builds and tests without a cloud account. Production uses Firebase Authentication and Firestore only; tests use fakes and never call Together AI. See `web/README.md`.
 
 ## Rules for contributors, human or agent
 
