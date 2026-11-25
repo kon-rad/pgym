@@ -41,6 +41,7 @@ export const FOOTER_COLUMNS: { title: string; links: [href: string, text: string
       ['/agents', 'Agents'],
       ['/skill.md', 'skill.md'],
       ['/open-source', 'Open source'],
+      ['/contact', 'Contact us'],
       [site.githubUrl, 'GitHub'],
     ],
   },
@@ -90,6 +91,7 @@ export function SiteFooter() {
           <p className="footer-mail">
             <SupportEmail />
           </p>
+          <p className="footer-made">Made with intention by <a href={site.ownerXUrl}>Konrad Gnat</a></p>
         </div>
       </div>
     </footer>

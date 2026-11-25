@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   '/privacy',
   '/terms',
   '/support',
+  '/contact',
   '/delete-account',
 ] as const
 

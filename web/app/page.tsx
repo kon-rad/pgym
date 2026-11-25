@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { EditorScreen, Phone, ProgressScreen, ProofWallScreen } from '@/components/AppScreens'
+import { EditorScreen, Phone, ProgressScreen, ProofWallScreen, SessionScreen } from '@/components/AppScreens'
 import { CallToAction, HERO_EMAIL_ID } from '@/components/CallToAction'
 import { LoopDemo } from '@/components/LoopDemo'
 import { ProofCard, type ProofCardProps } from '@/components/ProofCard'
@@ -208,6 +208,20 @@ export default function Home() {
             >
               <ProofWallScreen />
             </Phone>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Private by default */}
+      <section className="section app-preview" aria-labelledby="app-preview-title">
+        <div className="wrap">
+          <span className="label">Inside PGYM</span>
+          <h2 id="app-preview-title" className="display display-h2 section-title">The session, the card, the progress.</h2>
+          <p className="lead">The same Ink, Chalk and Plate design you use in the app, from your first set to your next proof.</p>
+          <div className="app-preview-grid">
+            <div><Phone size="m" label="PGYM session screen showing logged sets and the finish button"><SessionScreen /></Phone><p className="label">Log your sets</p></div>
+            <div><Phone size="m" label="PGYM proof card editor showing an example stamped card"><EditorScreen card={HERO_CARD} /></Phone><p className="label">Stamp your proof</p></div>
+            <div><Phone size="m" label="PGYM progress screen showing a weekly streak and proof wall"><ProgressScreen /></Phone><p className="label">See your progress</p></div>
           </div>
         </div>
       </section>

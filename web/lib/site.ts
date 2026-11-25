@@ -15,7 +15,8 @@ export const site = {
   description:
     'Log your sets, take one photo, and get a card stamped with the time and your proof number. You pick the days a week. Rest days never break it.',
   url: clean(process.env.NEXT_PUBLIC_SITE_URL) || 'http://localhost:3000',
-  supportEmail: clean(process.env.NEXT_PUBLIC_SUPPORT_EMAIL),
+  supportEmail: clean(process.env.NEXT_PUBLIC_SUPPORT_EMAIL) || 'synducer@gmail.com',
+  ownerXUrl: 'https://x.com/konrad_gnat',
   /** Legal name in the footer and the legal pages. Undecided, so it stays the [COMPANY] placeholder. */
   operator: clean(process.env.NEXT_PUBLIC_OPERATOR_NAME) || '[COMPANY]',
   /** Postal address for the support page and the legal pages. Undecided: [ADDRESS]. */
