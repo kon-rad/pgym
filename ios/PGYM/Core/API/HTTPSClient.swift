@@ -14,6 +14,7 @@ enum HTTPSConfiguration {
 enum HTTPSClientError: Error, Equatable {
     case offline
     case unauthenticated
+    case forbidden(String)
     case notFound
     case conflict(String)
     case invalid(String)
@@ -104,7 +105,8 @@ final class HTTPSClient {
         let message = detail?.message ?? HTTPURLResponse.localizedString(forStatusCode: status)
         switch status {
         case 400: return .invalid(message)
-        case 401, 403: return .unauthenticated
+        case 401: return .unauthenticated
+        case 403: return .forbidden(message)
         case 404: return .notFound
         case 409: return .conflict(message)
         case 429: return .rateLimited

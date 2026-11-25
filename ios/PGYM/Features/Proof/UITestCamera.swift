@@ -7,7 +7,7 @@ import UIKit
 ///
 /// This is not a photo import: nothing is read from the library or the disk, and the whole type is
 /// compiled only into Debug builds. A Release or archive build has no way to turn it on, so the rule
-/// "the proof photo comes from the in-app camera only" (AGENTS.md) holds for every build that ships.
+/// UI tests use a synthetic photo; production accepts a camera capture or a user-selected library photo.
 enum UITestCamera {
     static let argument = "-pgym-ui-test-camera"
 

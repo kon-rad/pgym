@@ -1,4 +1,5 @@
 import DesignSystem
+import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -11,8 +12,11 @@ struct CameraPermissionScreen: View {
     var onAllow: () -> Void
     var onNotNow: () -> Void
     var onSaveWithoutProof: () -> Void
+    var onImport: (Data) -> Void = { _ in }
 
     @Environment(\.openURL) private var openURL
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var importError = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.grid(5)) {
@@ -45,6 +49,14 @@ struct CameraPermissionScreen: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("d6.body")
             Spacer()
+            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                Label("Choose from Photos", systemImage: "photo.on.rectangle")
+                    .font(.pgym(.bodyMedium, size: 17))
+                    .foregroundStyle(Color.ink)
+                    .frame(maxWidth: .infinity, minHeight: Spacing.touchTargetMin)
+                    .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.plate))
+            }
+            .accessibilityIdentifier("d6.library")
             if permission == .denied {
                 PrimaryButton(ProofCopy.openSettings) {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
@@ -69,6 +81,17 @@ struct CameraPermissionScreen: View {
         .padding(.bottom, Spacing.grid(4))
         .background(Color.ink.ignoresSafeArea())
         .accessibilityIdentifier(Self.viewID)
+        .onChange(of: selectedPhoto) { _, selection in
+            guard let selection else { return }
+            Task {
+                defer { selectedPhoto = nil }
+                if let data = try? await selection.loadTransferable(type: Data.self) { onImport(data) }
+                else { importError = true }
+            }
+        }
+        .alert("Could not open photo", isPresented: $importError) {
+            Button("OK", role: .cancel) {}
+        } message: { Text("Choose another image from your library.") }
     }
 }
 

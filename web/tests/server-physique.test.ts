@@ -16,6 +16,12 @@ describe('seven photo scores', () => {
     expect(provider.analyze).toHaveBeenCalledWith(jpeg);
   });
 
+  it('accepts JSON fenced by a vision model', () => {
+    expect(parsePhysique('```json\n' + JSON.stringify(valid) + '\n```')).toEqual({
+      score: 68, dimensions, tip: valid.coaching, encouragement: valid.encouragement,
+    });
+  });
+
   it('rejects invented, missing, unsafe and malformed values', () => {
     expect(parsePhysique(JSON.stringify({ ...valid, dimensions: { ...dimensions, quadProportion: 101 } }))).toBeNull();
     expect(parsePhysique(JSON.stringify({ ...valid, dimensions: { shoulderWaist: 62 } }))).toBeNull();

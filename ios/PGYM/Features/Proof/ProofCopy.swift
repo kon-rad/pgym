@@ -4,11 +4,11 @@ import Foundation
 /// itself follows pgym-proof-card-spec.md, which owns the card.
 enum ProofCopy {
     // MARK: D6 Camera permission
-    static let permissionTitle = "The camera is the proof"
-    static let permissionBody = "PGYM takes the photo itself, so the time on your card is real. Photos from your library cannot be used."
+    static let permissionTitle = "Choose your photo"
+    static let permissionBody = "Take a new photo or choose one you already took. Your card uses the workout's verified proof number and time."
     static let permissionAllow = "Allow camera"
     static let permissionNotNow = "Not now"
-    static let permissionDenied = "Camera access is off. Turn it on in Settings to take your proof."
+    static let permissionDenied = "Camera access is off. Choose an existing photo or turn on camera access in Settings."
     static let openSettings = "Open Settings"
     static let saveWithoutProof = "Save without proof"
 
@@ -33,7 +33,7 @@ enum ProofCopy {
     static let filterRaw = "Raw"
     static let sectionOnCard = "On the card"
     static let statSets = "Sets"
-    static let statTotal = "Total lifted"
+    static let statTotal = "Lifted"
     static let statTime = "Time"
     static let statTopLift = "Top lift"
     static let pickThree = "Pick 3."
@@ -89,9 +89,9 @@ enum PhysiqueAnalysisMessage {
         case .offline:
             return "Connect to the internet and try AI analysis again."
         case .unauthenticated:
-            return "Your session needs to be refreshed. Sign in again and retry."
-        case .invalid:
-            return "This photo could not be scored. Try a clear, full-body photo in even light."
+            return "Sign in again, then retry analysis. If Pro is active on this iPhone, use Restore Purchases in Profile."
+        case .invalid(let message):
+            return message.isEmpty ? "This photo could not be scored. Try a clear, full-body photo in even light." : message
         default:
             return "AI analysis is temporarily unavailable. Your proof is saved. Try again later."
         }

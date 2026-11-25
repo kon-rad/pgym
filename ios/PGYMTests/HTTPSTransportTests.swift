@@ -54,4 +54,18 @@ final class HTTPSTransportTests: XCTestCase {
         XCTAssertEqual(request?.value(forHTTPHeaderField: "Content-Type"), "image/jpeg")
         XCTAssertEqual(request?.httpBody, Data([0xff, 0xd8, 0xff]))
     }
+
+    func testPhysiqueAnalysisShowsServerFailureReason() async {
+        let tokens = Tokens()
+        let client = HTTPSClient(baseURL: URL(string: "https://api.example.test")!, tokenProvider: tokens) { request in
+            let body = Data(#"{"error":{"code":"unavailable","message":"The analysis service is unavailable. Try again later."}}"#.utf8)
+            return (body, HTTPURLResponse(url: request.url!, statusCode: 503, httpVersion: nil, headerFields: nil)!)
+        }
+        do {
+            _ = try await HTTPSProofAPI(client: client).analyzePhysiquePhoto(jpeg: Data([0xff, 0xd8]), sessionID: "session-1")
+            XCTFail("Expected provider failure")
+        } catch {
+            XCTAssertEqual(error as? ProofAPIError, .invalid("The analysis service is unavailable. Try again later."))
+        }
+    }
 }

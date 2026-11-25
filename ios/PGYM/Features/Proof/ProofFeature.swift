@@ -76,6 +76,7 @@ struct ProofFlowView: View {
     @State private var step: ProofFeature.Step?
     @State private var photo: CGImage?
     @State private var processing = false
+    @State private var photoError = false
 
     var body: some View {
         ZStack {
@@ -86,6 +87,9 @@ struct ProofFlowView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear(perform: start)
+        .alert("Could not use photo", isPresented: $photoError) {
+            Button("OK", role: .cancel) {}
+        } message: { Text("Choose another clear photo to make your card.") }
     }
 
     @ViewBuilder
@@ -96,7 +100,8 @@ struct ProofFlowView: View {
                 permission: permission,
                 onAllow: { Task { await requestCamera() } },
                 onNotNow: onClose,
-                onSaveWithoutProof: onSaveWithoutProof
+                onSaveWithoutProof: onSaveWithoutProof,
+                onImport: { data in Task { await keep(data) } }
             )
             .transition(.opacity)
         case .camera:
@@ -158,7 +163,7 @@ struct ProofFlowView: View {
             try? store.savePhoto(clean.jpeg, for: id)
             return clean.image
         }.value
-        guard let image else { return }
+        guard let image else { photoError = true; return }
         photo = image
         go(.editor)
     }

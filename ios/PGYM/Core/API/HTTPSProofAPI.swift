@@ -52,7 +52,17 @@ final class HTTPSProofAPI: ProofAPI {
         do {
             let result: PhysiqueResponse = try await client.send("POST", path: "/api/physique-score?sessionId=\(sessionID)", body: jpeg, contentType: "image/jpeg")
             return PhysiqueRecord(score: result.score, tip: result.tip, dimensions: result.dimensions, encouragement: result.encouragement)
-        } catch { throw Self.proofError(error) }
+        } catch {
+            if let issue = error as? HTTPSClientError {
+                switch issue {
+                case .forbidden(let message), .conflict(let message), .server(_, let message):
+                    throw ProofAPIError.invalid(message)
+                case .rateLimited: throw ProofAPIError.invalid("Today's analysis limit is reached. Try again tomorrow.")
+                default: break
+                }
+            }
+            throw Self.proofError(error)
+        }
     }
 
     static func proofError(_ error: Error) -> ProofAPIError {
@@ -60,6 +70,7 @@ final class HTTPSProofAPI: ProofAPI {
         switch error {
         case .offline: return .offline
         case .unauthenticated: return .unauthenticated
+        case .forbidden(let message): return .invalid(message)
         case .notFound: return .notFound
         case .conflict(let message):
             if message.localizedCaseInsensitiveContains("already stamped") { return .alreadyStamped }

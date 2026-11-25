@@ -48,7 +48,7 @@ PGYM exists to get people to the gym and keep them healthy. The look and feel is
 
 ## Product rules that code must keep
 
-- The proof photo comes from the in-app camera only. No photo-library import.
+- The proof photo comes from the in-app camera or a photo the user explicitly selects in the system photo picker. Strip metadata from either source before storage.
 - The timestamp and proof number are set by the server, never by the phone.
 - The physique score is private, opt-in, 18+, and never appears on the share card or in the agent API unless the token has `read:photos` and the user turned the score on.
 - The agent API is read-only in v1. Tokens are stored as SHA-256 hashes, never in clear text.
