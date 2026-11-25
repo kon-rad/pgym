@@ -1,11 +1,7 @@
 import Foundation
 
-/// The callable Cloud Functions the proof flow uses (pgym-architecture.md, "Functions"; card I7):
-/// `createUploadUrls`, `getPhotoUrls` and `stampSession`. Shapes mirror `backend/src/handlers.ts`.
-///
-/// The phone never holds an AWS key: it asks for presigned URLs and PUTs the files straight to S3
-/// (or MinIO locally). Every call carries the Firebase ID token and, on the Firebase backend, an
-/// App Check token (`FirebaseProofAPI`, `FirebaseBootstrap`).
+/// The authenticated HTTPS proof operations. Proof photos and cards stay on the phone; only the
+/// local JPEG digest and card metadata are sent for the server-issued stamp.
 enum API {
     static let stampSession = "stampSession"
     static let analyzePhotoInsight = "analyzePhotoInsight"
@@ -248,7 +244,7 @@ enum ProofAPIError: Error, Equatable {
     }
 }
 
-/// The three proof functions. Firebase in the app (`FirebaseProofAPI`), an in-memory server in tests
+/// The proof operations. HTTPS in the app (`HTTPSProofAPI`), an in-memory server in tests
 /// and in builds without Firebase (`FakeProofAPI`).
 @MainActor
 protocol ProofAPI: AnyObject {
@@ -268,4 +264,5 @@ protocol ProofAPI: AnyObject {
     ) async throws -> StampReceipt
     /// Optional, transient analysis. Failure must never block stamping.
     func analyzePhotoInsight(jpeg: Data) async throws -> String
+    func analyzePhysiquePhoto(jpeg: Data, sessionID: String) async throws -> PhysiqueRecord
 }

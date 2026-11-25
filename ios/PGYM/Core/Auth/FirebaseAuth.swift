@@ -2,14 +2,13 @@
 import FirebaseAuth
 import FirebaseCore
 import FirebaseFirestore
-import FirebaseFunctions
 import Foundation
 import GoogleSignIn
 import UIKit
 
 /// `AuthService` on Firebase Authentication: Apple (with the nonce), Google, email and password.
 @MainActor
-final class FirebaseAuthService: AuthService {
+final class FirebaseAuthService: AuthService, IDTokenProvider {
     private let auth: Auth
 
     init(auth: Auth = .auth()) {
@@ -151,6 +150,13 @@ final class FirebaseAuthService: AuthService {
         }
     }
 
+    func freshIDToken() async throws -> String {
+        try await run {
+            guard let user = auth.currentUser else { throw AuthFailure.unknown }
+            return try await user.getIDToken(forcingRefresh: true)
+        }
+    }
+
     func signOut() throws {
         do {
             try auth.signOut()
@@ -229,27 +235,14 @@ final class FirestoreUserRepository: UserRepository {
     }
 }
 
-/// The callable functions, on Cloud Functions for Firebase.
-@MainActor
-final class FirebaseAccountFunctions: AccountFunctions {
-    private let functions: Functions
-
-    init(functions: Functions = .functions()) {
-        self.functions = functions
-    }
-
-    func deleteAccount() async throws {
-        _ = try await functions.httpsCallable("deleteAccount").call()
-    }
-}
-
 extension AuthDependencies {
     /// The real services. Only valid after `FirebaseBootstrap.configure` returned `.configured`.
     static func firebase() -> AuthDependencies {
-        AuthDependencies(
-            auth: FirebaseAuthService(),
+        let auth = FirebaseAuthService()
+        return AuthDependencies(
+            auth: auth,
             users: FirestoreUserRepository(),
-            functions: FirebaseAccountFunctions(),
+            functions: HTTPSAccountService(client: HTTPSClient.live(tokenProvider: auth)),
             handleOpenURL: { FirebaseAuthService.handleOpenURL($0) }
         )
     }

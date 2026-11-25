@@ -19,7 +19,6 @@ struct ProofCameraScreen: View {
     @State private var timerOn: Bool
     @State private var countdown: Int?
     @State private var countdownTask: Task<Void, Never>?
-    @State private var showHint = true
     @State private var flash = false
     @State private var shutterTick = 0
     @State private var countTick = 0
@@ -72,16 +71,16 @@ struct ProofCameraScreen: View {
             Color.white.opacity(flash ? 0.85 : 0).ignoresSafeArea().allowsHitTesting(false)
             VStack {
                 topBar
-                if showHint {
-                    Text(ProofCopy.cameraHint)
-                        .pgymText(.labelBold, size: 12)
-                        .foregroundStyle(Color.chalk)
-                        .padding(.horizontal, Spacing.grid(3))
-                        .padding(.vertical, Spacing.grid(2))
-                        .background(Capsule().fill(Color.ink.opacity(0.7)))
-                        .transition(.opacity)
-                        .padding(.top, Spacing.grid(2))
-                }
+                Text(ProofCopy.cameraHint)
+                    .pgymText(.labelBold, size: 12)
+                    .foregroundStyle(Color.chalk)
+                    .padding(.horizontal, Spacing.grid(3))
+                    .padding(.vertical, Spacing.grid(2))
+                    .background(Capsule().fill(Color.ink.opacity(0.7)))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, Spacing.grid(3))
+                    .padding(.top, Spacing.grid(2))
                 Spacer()
                 bottomBar
             }
@@ -97,10 +96,6 @@ struct ProofCameraScreen: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, !fakeCamera, camera.status == .unavailable { camera.start() }
-        }
-        .task {
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
-            withAnimation(.easeOut(duration: reduceMotion ? 0 : 0.4)) { showHint = false }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.\(Self.viewID)")

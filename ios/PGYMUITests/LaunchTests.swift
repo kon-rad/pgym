@@ -26,4 +26,15 @@ final class LaunchTests: XCTestCase {
         tabBar.buttons["Profile"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["screen.F1"].waitForExistence(timeout: 5))
     }
+
+    @MainActor
+    func testFreeUserSeesAICoachingPromotionAndProPlans() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-pgym-ui-test-signed-in"]
+        app.launch()
+        let promotion = app.buttons["c1.aiCoaching"]
+        XCTAssertTrue(promotion.waitForExistence(timeout: 10))
+        promotion.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["screen.paywall"].waitForExistence(timeout: 10))
+    }
 }

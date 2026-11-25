@@ -4,7 +4,6 @@ import SwiftData
 #if canImport(FirebaseFirestore)
 import FirebaseCore
 import FirebaseFirestore
-import FirebaseFunctions
 
 /// `users/{uid}/sessions/{sessionId}` in Firestore. The security rules let a user write only their own
 /// drafts and finished sessions, never a stamped one and never a server field (backend/firestore.rules).
@@ -19,7 +18,8 @@ final class FirestoreSessionRemote: SessionRemote {
     }
 
     func delete(sessionID: String, uid: String) async throws {
-        _ = try await Functions.functions().httpsCallable("deleteSession").call(["sessionId": sessionID])
+        let client = await HTTPSClient.live(tokenProvider: FirebaseAuthService())
+        let _: DeleteRemoteSessionResponse = try await client.send("DELETE", path: "/api/sessions/\(sessionID)")
     }
 
     func fetchExerciseStats(uid: String) async throws -> [RemoteExerciseStat] {
@@ -46,6 +46,8 @@ final class FirestoreSessionRemote: SessionRemote {
         return nil
     }
 }
+
+private struct DeleteRemoteSessionResponse: Decodable { let sessionId: String; let deleted: Bool }
 #endif
 
 /// Wires session sync to Firestore when the app runs on the Firebase backend; with the fake auth

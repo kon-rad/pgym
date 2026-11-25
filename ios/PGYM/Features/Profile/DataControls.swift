@@ -8,9 +8,7 @@ import SwiftData
 /// Turning analysis off (pgym-architecture.md: "Turning analysis off deletes stored scores"):
 /// 1. the scores leave the phone at once, so no screen shows them again;
 /// 2. `users/{uid}.physiqueConsent` goes false, so the server stops scoring new proofs;
-/// 3. the server deletes every stored score and tip (`deletePhysiqueScores`).
-/// If step 3 cannot reach the server, it is remembered and retried (`retryPending`) on the next
-/// connection, and the phone does not pull scores back in the meantime.
+/// 3. the HTTPS service deletes stored seven-score results from the user's sessions.
 @MainActor
 @Observable
 final class DataControls {
@@ -98,9 +96,8 @@ final class DataControls {
 
     // MARK: Photos and sessions
 
-    /// F6 Delete all photos. The server deletes every object; then the phone drops its copies of the
-    /// stamped cards. Sets, sessions and proof numbers stay. A card still waiting for its stamp keeps
-    /// its files: the stamp queue needs them to upload.
+    /// F6 Delete all photos. Proof media is local-only, so the phone drops its copies of stamped
+    /// cards. Sets, sessions and proof numbers stay. A card still waiting for its stamp keeps its files.
     @discardableResult
     func deleteAllPhotos(context: ModelContext) async throws -> Int {
         try await api.deleteAllPhotos()
@@ -190,7 +187,9 @@ struct DataExport: Encodable {
 
     struct Physique: Encodable {
         var score: Int?
+        var dimensions: [String: Int]
         var tip: String?
+        var encouragement: String?
         var refusedReason: String?
     }
 
@@ -275,7 +274,7 @@ struct DataExport: Encodable {
                             )
                         },
                         physique: session.hasPhysique
-                            ? Physique(score: session.physiqueScore, tip: session.physiqueTip, refusedReason: session.physiqueRefusedReason)
+                            ? Physique(score: session.physiqueScore, dimensions: session.physique?.dimensions ?? [:], tip: session.physiqueTip, encouragement: session.physiqueEncouragement, refusedReason: session.physiqueRefusedReason)
                             : nil
                     )
                 }

@@ -1,7 +1,4 @@
 import Foundation
-#if canImport(FirebaseFunctions)
-import FirebaseFunctions
-#endif
 
 /// The callable functions behind F6 Privacy and data and E3's Delete (card I8).
 ///
@@ -23,51 +20,29 @@ protocol PrivacyAPI: AnyObject {
     func deleteSession(sessionID: String) async throws
 }
 
-enum PrivacyCallable {
-    static let deletePhysiqueScores = "deletePhysiqueScores"
-    static let deleteAllPhotos = "deleteAllPhotos"
-    static let deleteSession = "deleteSession"
-}
-
-#if canImport(FirebaseFunctions)
 @MainActor
-final class FirebasePrivacyAPI: PrivacyAPI {
-    private let functions: Functions
+final class HTTPSPrivacyAPI: PrivacyAPI {
+    private let client: HTTPSClient
 
-    init(functions: Functions = .functions()) {
-        self.functions = functions
-    }
+    init(client: HTTPSClient) { self.client = client }
 
     func deletePhysiqueScores() async throws {
-        try await call(PrivacyCallable.deletePhysiqueScores, [:])
+        let _: DeletedScores = try await client.send("DELETE", path: "/api/physique-scores")
     }
 
     func deleteAllPhotos() async throws {
-        try await call(PrivacyCallable.deleteAllPhotos, [:])
+        // Proof photos and cards are local-only; DataControls removes those files next.
     }
 
     func deleteSession(sessionID: String) async throws {
-        try await call(PrivacyCallable.deleteSession, ["sessionId": sessionID])
-    }
-
-    private func call(_ name: String, _ payload: [String: Any]) async throws {
         do {
-            _ = try await functions.httpsCallable(name).call(payload)
-        } catch let error as URLError {
-            throw ProofAPIError.transport(error)
-        } catch {
-            let ns = error as NSError
-            if ns.domain == FunctionsErrorDomain {
-                throw ProofAPIError.callable(code: ns.code, message: ns.localizedDescription)
-            }
-            if ns.domain == NSURLErrorDomain {
-                throw ProofAPIError.transport(URLError(URLError.Code(rawValue: ns.code)))
-            }
-            throw ProofAPIError.unavailable
-        }
+            let _: DeleteSessionResponse = try await client.send("DELETE", path: "/api/sessions/\(sessionID)")
+        } catch { throw HTTPSProofAPI.proofError(error) }
     }
 }
-#endif
+
+private struct DeleteSessionResponse: Decodable { let sessionId: String; let deleted: Bool }
+private struct DeletedScores: Decodable { let deleted: Int }
 
 /// In memory: records every call. Tests set `failure` to make the next calls throw.
 @MainActor

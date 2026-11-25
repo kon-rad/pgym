@@ -32,6 +32,10 @@ PGYM is agent-first: you can create a personal access token in the app and give 
 
 The web service builds and tests without a cloud account. Production uses Firebase Authentication and Firestore only; tests use fakes and never call Together AI. See `web/README.md`.
 
+The iOS app calls that service over HTTPS with freshly refreshed Firebase ID tokens and uses
+RevenueCat for the `pro` entitlement. Local key and URL overrides belong in the ignored
+`ios/Config/Local.xcconfig`; see `ios/README.md`. No Firebase Functions product is linked to iOS.
+
 ## Rules for contributors, human or agent
 
 See `AGENTS.md`. The short version: no secrets in the repo, placeholders for anything account-specific, and every change runs against the local stack.

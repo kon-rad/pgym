@@ -5,5 +5,7 @@
 // Google Sign-In returns to the app through this URL scheme. It is REVERSED_CLIENT_ID from
 // GoogleService-Info.plist. The placeholder lets the app build; Google sign-in needs the real one.
 PGYM_GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.pgym-placeholder
+PGYM_API_BASE_URL = https:/$()/pgym.konradgnat.com
+REVENUECAT_API_KEY = placeholder
 
 #include? "Local.xcconfig"

@@ -21,6 +21,8 @@ struct ScoreHistoryScreen: View {
     @State private var offering = false
     @State private var working = false
     @State private var offTick = 0
+    @State private var selectedDimension: PhysiqueDimension?
+    @State private var showingMetricInfo = false
 
     private var isOnline: Bool { network?.isOnline ?? true }
     private var isAdult: Bool {
@@ -79,6 +81,9 @@ struct ScoreHistoryScreen: View {
             )
             .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showingMetricInfo) {
+            PhysiqueMetricInfoScreen()
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.\(Self.viewID)")
     }
@@ -109,12 +114,25 @@ struct ScoreHistoryScreen: View {
                 SkeletonBlock(height: 64)
             }
         } else {
+            Button("What do the six scores mean?") { showingMetricInfo = true }
+                .foregroundStyle(Color.plate)
             if phase == .failed {
                 ErrorCard(message: ProgressCopy.scoresFailed, retryTitle: ProgressCopy.retry, identifier: "e5.error") {
                     Task { await refresh() }
                 }
             }
             if points.contains(where: { $0.score != nil }) {
+                if points.contains(where: { !$0.dimensions.isEmpty }) {
+                    Picker("Metric", selection: $selectedDimension) {
+                        Text("Overall fitness and muscle").tag(PhysiqueDimension?.none)
+                        ForEach(PhysiqueDimension.allCases) { dimension in
+                            Text(dimension.title).tag(Optional(dimension))
+                        }
+                    }
+                    .tint(Color.chalk)
+                    .pickerStyle(.menu)
+                    metricBests(points)
+                }
                 chart(points)
                 rows(points)
                 Text(StampCopy.disclaimer)
@@ -131,20 +149,21 @@ struct ScoreHistoryScreen: View {
 
     /// Scores as one plain Plate line; a refusal starts a new segment so it shows as a gap.
     private func chart(_ points: [ProgressModel.ScorePoint]) -> some View {
-        let segments = Self.segments(points)
+        let segments = Self.segments(points).filter { selectedDimension == nil || $0.point.dimensions[selectedDimension!.rawValue] != nil }
+        let rolling = Self.rollingAverage(segments, dimension: selectedDimension)
         return VStack(alignment: .leading, spacing: Spacing.grid(3)) {
-            SectionLabel(ProgressCopy.scoreOverTime)
-            Chart(segments, id: \.point.sessionID) { item in
-                LineMark(
-                    x: .value("Date", item.point.date),
-                    y: .value("Score", item.point.score ?? 0),
-                    series: .value("Segment", "s\(item.segment)")
-                )
-                .foregroundStyle(Color.plate)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                PointMark(x: .value("Date", item.point.date), y: .value("Score", item.point.score ?? 0))
-                    .foregroundStyle(Color.chalk)
-                    .symbolSize(24)
+            SectionLabel("Scores over time · 7-day average")
+            Chart {
+                ForEach(segments, id: \.point.sessionID) { item in
+                    PointMark(x: .value("Date", item.point.date), y: .value("Score", selectedDimension.flatMap { item.point.dimensions[$0.rawValue] } ?? item.point.score ?? 0))
+                        .foregroundStyle(Color.chalk)
+                        .symbolSize(30)
+                }
+                ForEach(rolling, id: \.id) { item in
+                    LineMark(x: .value("Date", item.date), y: .value("7-day average", item.value))
+                        .foregroundStyle(Color.plate)
+                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                }
             }
             .chartYScale(domain: 0...100)
             .frame(height: 180)
@@ -152,6 +171,44 @@ struct ScoreHistoryScreen: View {
         }
         .padding(Spacing.grid(4))
         .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Color.iron))
+    }
+
+    struct RollingScore {
+        var id: String
+        var date: Date
+        var value: Double
+    }
+
+    static func rollingAverage(_ items: [Segmented], dimension: PhysiqueDimension?) -> [RollingScore] {
+        items.map { current in
+            let start = current.point.date.addingTimeInterval(-7 * 24 * 60 * 60)
+            let values = items.filter { $0.point.date >= start && $0.point.date <= current.point.date }
+                .compactMap { item -> Int? in
+                    dimension.flatMap { item.point.dimensions[$0.rawValue] } ?? item.point.score
+                }
+            return RollingScore(id: current.point.sessionID, date: current.point.date,
+                                value: Double(values.reduce(0, +)) / Double(max(1, values.count)))
+        }
+    }
+
+    private func metricBests(_ points: [ProgressModel.ScorePoint]) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.grid(2)) {
+            SectionLabel("Personal records")
+            if let best = points.compactMap(\.score).max() {
+                Text("Overall best · \(best)/100").foregroundStyle(Color.chalk)
+            }
+            ForEach(PhysiqueDimension.allCases) { dimension in
+                if let best = points.compactMap({ $0.dimensions[dimension.rawValue] }).max() {
+                    Text("\(dimension.title) · \(best)/100")
+                        .foregroundStyle(Color.bone)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .pgymText(.body, size: 15)
+        .padding(Spacing.grid(4))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.iron))
     }
 
     struct Segmented {
@@ -246,5 +303,31 @@ struct ScoreHistoryScreen: View {
         await proofs.controls.turnOffAnalysis(context: context)
         offTick += 1
         dismiss()
+    }
+}
+
+struct PhysiqueMetricInfoScreen: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.grid(4)) {
+                    Text("Photo scores are estimates, not health measurements. Use similar light, distance, clothing, and pose when comparing photos.")
+                        .pgymText(.body, size: 17)
+                        .foregroundStyle(Color.bone)
+                    ForEach(PhysiqueDimension.allCases) { dimension in
+                        VStack(alignment: .leading, spacing: Spacing.grid(1)) {
+                            Text(dimension.title).pgymText(.title).foregroundStyle(Color.chalk)
+                            Text(dimension.explanation).pgymText(.body, size: 15).foregroundStyle(Color.bone)
+                        }
+                    }
+                }
+                .padding(Spacing.screenMargin)
+            }
+            .background(Color.ink)
+            .navigationTitle("About the six scores")
+            .toolbar { Button("Done") { dismiss() } }
+        }
     }
 }

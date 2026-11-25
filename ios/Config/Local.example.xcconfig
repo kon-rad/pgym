@@ -3,3 +3,9 @@
 // REVERSED_CLIENT_ID from your GoogleService-Info.plist, for example
 // com.googleusercontent.apps.YOUR-CLIENT-ID
 PGYM_GOOGLE_REVERSED_CLIENT_ID =
+
+// RevenueCat public Apple SDK key. Secret RevenueCat API keys never belong here.
+REVENUECAT_API_KEY =
+
+// Override only for a local HTTPS-compatible service.
+PGYM_API_BASE_URL = https:/$()/[DOMAIN]

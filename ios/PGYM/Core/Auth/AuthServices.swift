@@ -23,6 +23,8 @@ protocol AuthService: AnyObject {
     func revokeAppleToken(authorizationCode: String) async throws
     /// Re-reads the user from the server (for example after the verification link was clicked).
     func reloadUser() async throws -> AuthUser?
+    /// A freshly refreshed Firebase ID token for authenticated HTTPS routes.
+    func freshIDToken() async throws -> String
     func signOut() throws
 }
 
@@ -40,10 +42,10 @@ protocol UserRepository: AnyObject {
     func saveOnboarding(_ settings: OnboardingSettings, uid: String) async throws
 }
 
-/// The callable Cloud Functions sign-in needs (pgym-architecture.md, "Functions").
+/// The authenticated account deletion operation.
 @MainActor
 protocol AccountFunctions: AnyObject {
-    /// `deleteAccount`: deletes every S3 object, every document and the auth user, server side.
+    /// Deletes every server-side document and the Firebase Auth user.
     func deleteAccount() async throws
 }
 

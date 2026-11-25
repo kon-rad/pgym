@@ -1,17 +1,48 @@
 import Foundation
 import Observation
 
+/// Scores describe what is visible in one photo. They are not health measurements.
+enum PhysiqueDimension: String, CaseIterable, Identifiable, Codable {
+    case shoulderWaist, waistHeight, torsoDelt, symmetryAlignment, torsoCoreDefinition, quadProportion
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .shoulderWaist: "Shoulder-to-Waist Ratio (V-Taper Index)"
+        case .waistHeight: "Waist-to-Height Ratio (Metabolic & Fat-Loss Velocity)"
+        case .torsoDelt: "Torso Taper Angle & Lateral Delt Cap Curvature"
+        case .symmetryAlignment: "Bilateral Symmetry & Postural Alignment Score"
+        case .torsoCoreDefinition: "Upper-Torso & Core Definition Score (Conditioning)"
+        case .quadProportion: "Quad-to-Hip & Knee Proportionality (Lower-Body Sweep)"
+        }
+    }
+    var explanation: String {
+        switch self {
+        case .shoulderWaist: "Compares visible shoulder width with waist width in this photo. Pose and camera angle can change the ratio."
+        case .waistHeight: "Compares visible waist width with full-body height. This cannot measure visceral fat, body composition, or metabolic health."
+        case .torsoDelt: "Estimates the visible torso taper and shoulder contour. Clothing, pose, and lighting affect both."
+        case .symmetryAlignment: "Compares left and right contours and visible landmark alignment. A photo cannot diagnose posture or injury risk."
+        case .torsoCoreDefinition: "Estimates visible upper-torso and core separation. Lighting and temporary changes can shift this score."
+        case .quadProportion: "Compares visible thigh contours with hip and knee widths. Shorts, stance, and camera angle affect it."
+        }
+    }
+}
+
 /// `users/{uid}/sessions/{sessionId}.physique` as `analyzePhysique` writes it (backend/src/physique.ts):
 /// either a score with an optional tip, or a refusedReason, never both.
 struct PhysiqueRecord: Equatable, Sendable {
     var score: Int?
     var tip: String?
+    var dimensions: [String: Int] = [:]
+    var encouragement: String?
     var refusedReason: String?
     var analyzedAt: Date?
 
-    init(score: Int? = nil, tip: String? = nil, refusedReason: String? = nil, analyzedAt: Date? = nil) {
+    init(score: Int? = nil, tip: String? = nil, refusedReason: String? = nil, analyzedAt: Date? = nil, dimensions: [String: Int] = [:], encouragement: String? = nil) {
         self.score = score
         self.tip = tip
+        self.dimensions = dimensions
+        self.encouragement = encouragement
         self.refusedReason = refusedReason
         self.analyzedAt = analyzedAt
     }
@@ -22,11 +53,18 @@ struct PhysiqueRecord: Equatable, Sendable {
         let reason = (map["refusedReason"] as? String).flatMap { $0.isEmpty ? nil : $0 }
         let score = API.number(map["score"]).map { min(100, max(0, Int($0.rounded()))) }
         let tip = (map["tip"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawDimensions = map["dimensions"] as? [String: Any] ?? [:]
+        let dimensions = Dictionary(uniqueKeysWithValues: PhysiqueDimension.allCases.compactMap { dimension -> (String, Int)? in
+            guard let number = API.number(rawDimensions[dimension.rawValue]), number.isFinite, (0...100).contains(number) else { return nil }
+            return (dimension.rawValue, Int(number.rounded()))
+        })
         self.init(
             score: reason == nil ? score : nil,
             tip: reason == nil ? ((tip?.isEmpty ?? true) ? nil : tip) : nil,
             refusedReason: reason,
-            analyzedAt: map["analyzedAt"] as? Date
+            analyzedAt: map["analyzedAt"] as? Date,
+            dimensions: reason == nil ? dimensions : [:],
+            encouragement: reason == nil ? map["encouragement"] as? String : nil
         )
     }
 

@@ -51,6 +51,26 @@ enum ProofImageIO {
         return data
     }
 
+    /// A reduced, metadata-free copy for one transient analysis request.
+    static func analysisJPEG(_ image: CGImage) throws -> Data {
+        let scale = min(1, 1200.0 / CGFloat(max(image.width, image.height)))
+        let width = max(1, Int((CGFloat(image.width) * scale).rounded()))
+        let height = max(1, Int((CGFloat(image.height) * scale).rounded()))
+        let color = CGColorSpace(name: CGColorSpace.sRGB)!
+        guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: color, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else {
+            throw IOError.encode
+        }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let resized = context.makeImage() else { throw IOError.encode }
+        for quality in [CGFloat(0.65), 0.50, 0.35] {
+            let data = try jpeg(resized, quality: quality)
+            if data.count <= 1_500_000 { return data }
+        }
+        throw IOError.encode
+    }
+
     /// A baseline sRGB JPEG with no metadata dictionaries at all.
     static func jpeg(_ image: CGImage, quality: CGFloat) throws -> Data {
         let output = NSMutableData()

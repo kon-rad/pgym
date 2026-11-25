@@ -63,6 +63,7 @@ final class ProofServices {
         sessionSync: SessionSyncQueue,
         account: AppSession,
         reminders: ReminderScheduler,
+        purchases: PurchaseState? = nil,
         unit: @escaping @MainActor () -> WeightUnit
     ) {
         let consent = consent
@@ -70,9 +71,8 @@ final class ProofServices {
         let images = images
         let queue = queue
         queue.beforeStamp = { await consent.flush() }
-        queue.physiqueEnabled = {
-            consent.isOn && PhysiqueRules.isAdult(birthYear: account.profile?.birthYear, currentYear: AgePolicy.currentYear())
-        }
+        // Analysis now starts from the stamped workout card, after explicit consent.
+        queue.physiqueEnabled = { false }
         queue.restampCard = { session, receipt in
             let jpeg = try ProofFeature.restampCard(session: session, receipt: receipt, unit: unit(), store: store)
             if let key = session.cardKey { images.store(jpeg, for: key) }
@@ -111,9 +111,10 @@ final class ProofServices {
             suite.removePersistentDomain(forName: "pgym-ui-test")
             defaults = suite
         }
-        #if canImport(FirebaseFunctions) && canImport(FirebaseFirestore)
+        #if canImport(FirebaseAuth) && canImport(FirebaseFirestore)
         if useFirebase {
-            let api = FirebaseProofAPI()
+            let client = HTTPSClient.live(tokenProvider: FirebaseAuthService())
+            let api = HTTPSProofAPI(client: client)
             let engine = ProofStampEngine(api: api, uploader: URLSessionProofUploader(), store: store)
             let queue = ProofStampQueue(
                 container: container,
@@ -131,7 +132,7 @@ final class ProofServices {
                 physique: FirestorePhysiqueSource(),
                 images: SignedImageCache(api: api),
                 store: store,
-                privacy: FirebasePrivacyAPI(),
+                privacy: HTTPSPrivacyAPI(client: client),
                 defaults: defaults
             )
         }
