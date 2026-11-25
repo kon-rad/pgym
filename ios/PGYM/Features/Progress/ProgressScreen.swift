@@ -95,7 +95,7 @@ struct ProgressScreen: View {
             chartSection(snapshots)
         } else {
             Button { showingPaywall = true } label: {
-                LinkRow(title: "Unlock advanced progress", caption: "Twelve-week trends and your full proof history", detail: "PRO")
+                LinkRow(title: "Unlock advanced progress", detail: "PRO", caption: "Twelve-week trends and your full proof history")
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("e1.pro")
