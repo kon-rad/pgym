@@ -277,12 +277,23 @@ struct SessionCompleteScreen: View {
             .disabled(analyzing || !isOnline)
             .accessibilityIdentifier("d11.analyze")
             if analyzing {
-                HStack { Spacer(); ProgressView("Analyzing photo"); Spacer() }
+                HStack(spacing: Spacing.grid(2)) {
+                    ProgressView()
+                    Text("Reading your photo and preparing seven scores…")
+                        .pgymText(.body, size: 15)
+                }
                     .frame(maxWidth: .infinity)
+                    .padding(Spacing.grid(4))
+                    .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.iron))
                     .accessibilityIdentifier("d11.analyzing")
             }
             if let analysisError {
-                Text(analysisError).pgymText(.body, size: 15).foregroundStyle(Color.bone)
+                Label(analysisError, systemImage: "info.circle")
+                    .pgymText(.body, size: 15)
+                    .foregroundStyle(Color.bone)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Spacing.grid(4))
+                    .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.iron))
             }
         }
     }
@@ -301,6 +312,13 @@ struct SessionCompleteScreen: View {
     private func analyze(_ session: WorkoutSession) async {
         guard app.purchases.isPro else { showingPaywall = true; return }
         guard services.consent.isOn else { consentSheet = true; return }
+        if services.consent.needsUpload {
+            await services.consent.flush()
+            guard !services.consent.needsUpload else {
+                analysisError = "Your photo-analysis consent is still syncing. Connect to the internet and try again."
+                return
+            }
+        }
         guard let photo = services.store.loadPhoto(session.id),
               let jpeg = try? ProofImageIO.analysisJPEG(photo) else {
             analysisError = "The original photo is needed for analysis. Your workout card is still available."

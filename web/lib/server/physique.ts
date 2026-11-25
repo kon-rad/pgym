@@ -1,4 +1,5 @@
 import { HttpsError } from './errors';
+import { log } from './log';
 
 export const PHYSIQUE_PROMPT_VERSION = 'physique-seven-v1';
 export const PHYSIQUE_KEYS = [
@@ -17,7 +18,8 @@ export interface PhysiqueResult {
 
 export function parsePhysique(raw: string): PhysiqueResult | null {
   let parsed: unknown;
-  try { parsed = JSON.parse(raw); } catch { return null; }
+  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  try { parsed = JSON.parse(cleaned); } catch { return null; }
   if (typeof parsed !== 'object' || parsed === null) return null;
   const result = parsed as { usable?: unknown; dimensions?: Record<string, unknown>; overall?: unknown; coaching?: unknown; encouragement?: unknown };
   if (result.usable !== true || typeof result.overall !== 'number' || !Number.isInteger(result.overall) || result.overall < 0 || result.overall > 100) return null;
@@ -42,7 +44,7 @@ export interface PhysiqueProvider {
 export class TogetherPhysiqueProvider implements PhysiqueProvider {
   constructor(
     private readonly apiKey: string,
-    private readonly model = process.env.TOGETHER_MODEL || 'Qwen/Qwen3-VL-8B-Instruct',
+    private readonly model = process.env.TOGETHER_MODEL || 'Qwen/Qwen3.5-9B',
     private readonly fetchImpl: typeof fetch = fetch,
   ) {}
 
@@ -62,10 +64,16 @@ export class TogetherPhysiqueProvider implements PhysiqueProvider {
       }),
       signal: AbortSignal.timeout(30_000),
     });
-    if (!response.ok) throw new HttpsError('unavailable', 'Photo analysis is temporarily unavailable.');
+    if (!response.ok) {
+      log.warn('physique.provider', { status: response.status, model: this.model });
+      throw new HttpsError('unavailable', 'The analysis service is unavailable. Try again later.');
+    }
     const payload = await response.json() as { choices?: Array<{ message?: { content?: unknown } }> };
     const content = payload.choices?.[0]?.message?.content;
-    if (typeof content !== 'string') throw new HttpsError('unavailable', 'Photo analysis is temporarily unavailable.');
+    if (typeof content !== 'string') {
+      log.warn('physique.provider', { status: response.status, model: this.model, problem: 'missing-content' });
+      throw new HttpsError('unavailable', 'The analysis service did not return a score. Try again.');
+    }
     return content.trim();
   }
 }

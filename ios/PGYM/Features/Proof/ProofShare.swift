@@ -5,8 +5,8 @@ import SwiftUI
 import UIKit
 
 /// D12 Share: the iOS share sheet with the card JPEG (at the D8 size). Save to Photos is the sheet's
-/// own "Save Image" action; `ProofPhotoSaver` is the same thing as a direct button. Photos access is
-/// add-only: the app never reads the library.
+/// own "Save Image" action; `ProofPhotoSaver` is the same thing as a direct button. Saving uses
+/// add-only access. Photo import uses the system picker and reads only the image the user selects.
 struct ProofShareSheet: UIViewControllerRepresentable {
     static let viewID = "D12"
 

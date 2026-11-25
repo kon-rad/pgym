@@ -1,11 +1,11 @@
 import AVFoundation
 import AVKit
 import DesignSystem
+import PhotosUI
 import SwiftUI
 
 /// D7 Proof camera: full-screen preview, Close, the 3 second timer and flip on top; the shutter in the
-/// middle of the bottom bar, flip again on the right, and nothing on the left. There is no library
-/// button and no import, anywhere: the camera is the proof.
+/// middle of the bottom bar, library import on the left and flip on the right.
 struct ProofCameraScreen: View {
     static let viewID = "D7"
 
@@ -22,6 +22,9 @@ struct ProofCameraScreen: View {
     @State private var flash = false
     @State private var shutterTick = 0
     @State private var countTick = 0
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var importing = false
+    @State private var importError = false
 
     private let preferences: ProofPreferences
     /// UI tests on the simulator (Debug only): no hardware, the shutter returns a drawn picture.
@@ -68,6 +71,13 @@ struct ProofCameraScreen: View {
                     .transition(.scale.combined(with: .opacity))
                     .accessibilityLabel("\(countdown)")
             }
+            if importing {
+                ProgressView("Opening photo…")
+                    .padding(Spacing.grid(4))
+                    .background(RoundedRectangle(cornerRadius: Radius.card).fill(Color.ink.opacity(0.85)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("d7.importing")
+            }
             Color.white.opacity(flash ? 0.85 : 0).ignoresSafeArea().allowsHitTesting(false)
             VStack {
                 topBar
@@ -96,6 +106,23 @@ struct ProofCameraScreen: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, !fakeCamera, camera.status == .unavailable { camera.start() }
+        }
+        .onChange(of: selectedPhoto) { _, selection in
+            guard let selection else { return }
+            Task {
+                importing = true
+                defer { importing = false; selectedPhoto = nil }
+                if let data = try? await selection.loadTransferable(type: Data.self) {
+                    onCapture(data)
+                } else {
+                    importError = true
+                }
+            }
+        }
+        .alert("Could not open photo", isPresented: $importError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Choose another image from your library.")
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.\(Self.viewID)")
@@ -134,8 +161,16 @@ struct ProofCameraScreen: View {
 
     private var bottomBar: some View {
         HStack {
-            // Nothing on the left: no library button.
-            Color.clear.frame(width: 56, height: 56)
+            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color.chalk)
+                    .frame(width: 56, height: 56)
+                    .background(Circle().fill(Color.ink.opacity(0.6)))
+            }
+            .disabled(importing)
+            .accessibilityLabel("Choose photo from library")
+            .accessibilityIdentifier("d7.library")
             Spacer()
             Button(action: shoot) {
                 ZStack {
